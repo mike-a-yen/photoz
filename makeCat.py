@@ -478,7 +478,7 @@ class ClusterData(object):
         '''Check for CATALOGS, BPZ, and EAZY directories
            in pwd, if they do not exist, make them'''
         nothingMade = True
-        reqDirs = ['CATALOGS', 'pzplots',
+        reqDirs = ['CATALOGS', 'BADCATS','pzplots',
                    'COMBINED', 'COMBINED/pzpickles',
                    'EAZY', 'EAZY/pzpickles','EAZY/'+self.clusterName,
                    'BPZ','BPZ/pzpickles']
@@ -491,8 +491,7 @@ class ClusterData(object):
         if nothingMade == True:
             print bcolors.GREEN+'All Directories Exist\n Good to Go......'+bcolors.ENDC
         else:
-            print madeDirs
-            print bcolors.FAIL+'Had to create '+str(len(madeDirs))+' directory(ies)'+bcolors.ENDC
+            print bcolors.WARNING+'Had to create '+str(len(madeDirs))+' directory(ies)'+bcolors.ENDC
             for dir in madeDirs: print bcolors.FAIL+dir+bcolors.ENDC
 
     def CheckDetectionFilter(self):
@@ -646,7 +645,7 @@ class ClusterData(object):
 
     def WriteColumns(self):
         outName = 'CATALOGS/'+self.clusterName+'.columns'
-        badOutputName = 'BadBPZ/'+self.clusterName+'.columns'
+        badOutputName = 'BADCATS/'+self.clusterName+'.columns'
         output = open(outName,'w')
         badOutput = open(badOutputName,'w')
         columns = np.array(self.objInfo.dtype.names)
@@ -680,7 +679,7 @@ class ClusterData(object):
 
     def WriteCatalog(self):
         outName = 'CATALOGS/'+self.clusterName+'.cat'
-        badOutputName = 'BadBPZ/'+self.clusterName+'.cat'
+        badOutputName = 'BADCATS/'+self.clusterName+'.cat'
         output = open(outName,'w')
         badOutput = open(badOutputName,'w')
         columns = np.array(self.objInfo.dtype.names)
