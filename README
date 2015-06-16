@@ -1,32 +1,91 @@
-The goal is to use EAZY, BPZ, and other photoz template fitters (gave up on ZPEG) to yield P(z) plots
+The goal is to use EAZY, BPZ, and other photoz template fitters to yield P(z) plots
 
-In order to do this, I need to first take hst images from various filters, apply aperature photometry to the objects detected by sep (Kyle Barbary), and write the AB magnitudes for each filter to a catalog. The catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter. I have also included the x,y and RA,DEC.
+Setup seechange: (this is where the majority of images come from)
+    https://github.com/scplbl/seechange
+Download EAZY:
+    wget http://www.astro.yale.edu/eazy/download/eazy-1.00.tar.gz
+Download BPZ:
+    wget http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz
 
-#1. Make Catalog from HST images
+Setup current working directory with BPZ and EAZY tools: ($BPZPATH = path to BPZ, $EAZYPATH = path to EAZY)
+    ln -s $BPZPATH/bpz.py BPZSRC
+    ln -s $EAZYPATH/filters/FILTER.RES.latest FILTER.RES.latest
+    ln -s $EAZYPATH/filters/FILTER.RES.latest.info FILTER.RES.latest.info
+    ln -s $EAZYPATH/templates templates
+    ln -s $EAZYPATH/src/eazy EAZYSRC
+    
+With all of this setup check the BPZ and EAZY test cases
+    $BPZPATH/test
+    $EAZYPATH/doc/PythonDemo/
+
+On to the main event.
+First get images from various filters(seechange)
+Apply aperature photometry to the objects detected by sep (Kyle Barbary)
+Write the AB magnitudes for each filter to a catalog
+    Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
+    I have also included the x,y and RA,DEC.
+
+#1. Access seechange database
     from shell, run see_change_db --data_path data/
-    	 # this opens an ipython prompt
+        # this opens an ipython prompt
+#2. Initialize cluster
     import makeCat as MC
-    Initialize the data for the cluster with
-    	 cl = MC.ClusterData('<cluster name>')
-    Write Catalog (saved as CATALOGS/<cluster name>.cat)
-    	  cl.WriteCatalog()
+    cl = MC.ClusterData('cluster name',detectionFilter='F105W')
+        # default detectionFilter is F105W
+        # change if you want to use a different filter
+        # to detect objs in
 
-#2. Make .column file for BPZ (saved as CATALOGS/<cluster name>.columns)
-    cl.WriteColumns()
+    2a. If the cluster hasn't been analyzed yet run (recommended)
+        cl.FromScratch()
+        # this will run all of the necessary commands to yield P(z) plots
+        continue to step 3
+        
+    2b. Check requirements to run properly, this will create all required but non existant directories
+        cl.CheckRequiredDirectories()
+        cl.CheckDetectionFilter()
+            # default is F105W
+            # can be reset after initialization with cl.SetDetectionFilter
+            
+    2c. Write all required files to run BPZ and EAZY
+        cl.WriteCatalog() # for BPZ and EAZY
+        cl.WriteColumns()
+        cl.ParamBPZ()
+        cl.CheckBPZRequirements() # make sure everything is ready to run BPZ
+        cl.ParamEAZY(ASCII=False)
+        cl.TranslateEAZY()
+        cl.ZeroPointEAZY()
+        cl.CheckEAZYRequirements() # make sure everything is ready to run EAZY
+        
+    2d. Run BPZ and EAZY
+        cl.RunBPZ() # requires symlink setup
+        cl.RunEAZY() # requires symlink setup
+        
+    2e. Turn the BPZ and EAZY output into a more useable format
+        # saves outputs as a pickled (binary or ASCII) dictionary
+        # {'z':zrange, 'obID':P(z), ...}
+        cl.ProcessBPZOutput(ASCII=False)
+        cl.ProcessEAZYOutput(ACII=False)
+        # the best P(z) come from combining the BPZ and EAZY
+        cl.CombinePZ(ASCII=False)
+    
+    2f. Plot all P(z)'s
+        cl.PlotPickledPZ('BPZ')
+        cl.PlotPickledPZ('EAZY')
+        cl.PlotPickledPZ('COMBINED')
+        cl.PlotAllMethods()
+        
+        Write Catalog (saved as CATALOGS/<cluster name>.cat)
+        cl.WriteCatalog()
 
-#3. Make a .param file for EAZY (saved as CATALOGS/<cluster name>.param)
-    cl.ParamEAZY()
-#4. Make a .translate file for EAZY (saved as CATALOGS/<cluster name>.translate)
-    cl.TranslateEAZY()
-#5. Make a .zeropoint file for EAZY (saved as CATALOGS/<cluster name>.zeropoint)
-    cl.ZeroPointEAZY()
-
-These steps prep all of the files needed to run BPZ and EAZY from the command prompt or from the methods in ClusterData, cl.RunBPZ() and cl.RunEAZY()
-
-bpz CATALOGS/<cluster name>.cat -COLUMNS CATALOGS/<cluster name>.columns -OUTPUT BPZ/<cluster name>.bpz
-
-eazy -p CATALOGS/<cluster name>.param -t CATALOGS/<cluster name>.translate -z CATALOGS/<cluster name>.zeropoint
-
-BPZ and EAZY will yield files with the P(z) for each object, then I need to create P(z) plots from these files for each object
-
-At some point I will need to combine the P(z) for BPZ and EAZY to get the 'best' P(z)
+#3. With all the plots and catalogs made, it is useful to be able to get the P(z)
+    from the closest object to a given RA and DEC.
+    You specify an RA and DEC, get the P(z) from the object closest to that RA and DEC
+    objInfo, sep = cl.MatchRADECtoOBJ(ra,dec) # ra and dec should be unitless in degree format
+    # objInfo contains all information in the catalog for this object
+    # sep is the separation in arcsec from the given ra and dec
+    
+#4. To view the plots
+    cd pzplots
+    display ID#_clusterName_typeOfPlot.png
+    
+    
