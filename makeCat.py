@@ -119,7 +119,9 @@ class ClusterData(object):
             print bcolors.WARNING+'Can not Run BPZ yet, missing required files'+bcolors.ENDC
         else:
             print 'Calling BPZ......'
-            callStr = 'python /home/scpdata05/clustersn/photoz/bpz-1.99.3/bpz.py CATALOGS/%s.cat -P CATALOGS/%s.pars'%(self.clusterName,self.clusterName)
+            #callStr = 'python /home/scpdata05/clustersn/photoz/bpz-1.99.3/bpz.py CATALOGS/%s.cat -P CATALOGS/%s.pars'%(self.clusterName,self.clusterName)
+            callStr = 'python BPZSRC CATALOGS/%s.cat -P CATALOGS/%s.pars'%(self.clusterName,self.clusterName)
+            
             print callStr
             call(callStr,shell=True)
 
@@ -130,7 +132,8 @@ class ClusterData(object):
         else:
             print 'Calling EAZY......'
             # more details in ParamEAZY function or .param file
-            callStr = '/home/scpdata05/clustersn/photoz/eazy-photoz/src/eazy -p CATALOGS/%s.param -t CATALOGS/%s.translate -z CATALOGS/%s.zeropoint'%(self.clusterName,self.clusterName,self.clusterName)
+            #callStr = '/home/scpdata05/clustersn/photoz/eazy-photoz/src/eazy -p CATALOGS/%s.param -t CATALOGS/%s.translate -z CATALOGS/%s.zeropoint'%(self.clusterName,self.clusterName,self.clusterName)
+            callStr = './EAZYSRC -p CATALOGS/%s.param -t CATALOGS/%s.translate -z CATALOGS/%s.zeropoint'%(self.clusterName,self.clusterName,self.clusterName)
             print callStr
             call(callStr,shell=True)
             
@@ -854,6 +857,10 @@ class ClusterData(object):
                 components = line.split()
                 code = components[0]
                 return code
+
+    def SetDetectionFilter(self,filter):
+        self.detectionFilter = filter
+        print 'Set detection filter to: ',self.detectionFilter
 
 def WritePickle(dict,file,ASCII=False):
     ''' Takes in dictionary and file name(with path)
