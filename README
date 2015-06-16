@@ -1,0 +1,32 @@
+The goal is to use EAZY, BPZ, and other photoz template fitters (gave up on ZPEG) to yield P(z) plots
+
+In order to do this, I need to first take hst images from various filters, apply aperature photometry to the objects detected by sep (Kyle Barbary), and write the AB magnitudes for each filter to a catalog. The catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter. I have also included the x,y and RA,DEC.
+
+#1. Make Catalog from HST images
+    from shell, run see_change_db --data_path data/
+    	 # this opens an ipython prompt
+    import makeCat as MC
+    Initialize the data for the cluster with
+    	 cl = MC.ClusterData('<cluster name>')
+    Write Catalog (saved as CATALOGS/<cluster name>.cat)
+    	  cl.WriteCatalog()
+
+#2. Make .column file for BPZ (saved as CATALOGS/<cluster name>.columns)
+    cl.WriteColumns()
+
+#3. Make a .param file for EAZY (saved as CATALOGS/<cluster name>.param)
+    cl.ParamEAZY()
+#4. Make a .translate file for EAZY (saved as CATALOGS/<cluster name>.translate)
+    cl.TranslateEAZY()
+#5. Make a .zeropoint file for EAZY (saved as CATALOGS/<cluster name>.zeropoint)
+    cl.ZeroPointEAZY()
+
+These steps prep all of the files needed to run BPZ and EAZY from the command prompt or from the methods in ClusterData, cl.RunBPZ() and cl.RunEAZY()
+
+bpz CATALOGS/<cluster name>.cat -COLUMNS CATALOGS/<cluster name>.columns -OUTPUT BPZ/<cluster name>.bpz
+
+eazy -p CATALOGS/<cluster name>.param -t CATALOGS/<cluster name>.translate -z CATALOGS/<cluster name>.zeropoint
+
+BPZ and EAZY will yield files with the P(z) for each object, then I need to create P(z) plots from these files for each object
+
+At some point I will need to combine the P(z) for BPZ and EAZY to get the 'best' P(z)
