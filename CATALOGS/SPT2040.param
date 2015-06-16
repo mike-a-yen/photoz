@@ -1,0 +1,71 @@
+#### EAZY SPT2040 PARAM
+
+## Filters
+FILTERS_RES    FILTER.RES.latest # Filter transmission data
+FILTER_FORMAT    1 # 0: energy 1:photon-count
+SMOOTH_FILTERS    n # Smooth filter curves
+SMOOTH_SIGMA    100. #Gaussian sigma (Angstroms) to smooth filters
+
+## Templates
+TEMPLATES_FILE    templates/eazy_v1.2_dusty.spectra.param # Template definition file
+TEMPLATE_COMBOS    a # Template combinations
+                     # 1: one template at a time
+                     # 2: two templates, read allowed in combinations from TEMPLATES_FILE
+                     # a <or> 99: all templates simultaneously
+NMF_TOLERANCE    1.e-4 # Tolerance for non-negative combinations
+WAVELENGTH_FILE    templates/EAZY_v1.1_lines/lambda_v1.1.def # Wavelength grid definition file
+TEMP_ERR_FILE    templates/TEMPLATE_ERROR.eazy_v1.0 # Template error definition file
+TEMP_ERR_A2    0.50 # Template error amplitude
+SYS_ERR    0.00 # Systematic flux error (% of flux)
+APPLY_IGM    y # Apply Madau 1995 IGM absoption
+SCALE_2175_BUMP    0.00 # Scaling of 2175A bump. Values 0.13 (0.27) absorb ~10 (20) % at peak
+
+DUMP_TEMPLATE_CACHE    n # Write binary template cache
+USE_TEMPLATE_CACHE    n # Load in template cache
+CACHE_FILE    SPT2040.tempfilt # Template cache file in output directory
+## Input Files
+CATALOG_FILE    CATALOGS/SPT2040.cat # Catalog data file
+MAGNITUDES    y # Catalog photometry in flux or magnitudes
+NOT_OBS_THRESHOLD    -90 # Ignore flux point if < NOT_OBS_THRESHOLD
+N_MIN_COLORS    2 # Number of available filters
+
+##Output Files 
+OUTPUT_DIRECTORY    EAZY/SPT2040/ # where to put output
+MAIN_OUTPUT_FILE    SPT2040 # Main output file, .zout
+PRINT_ERRORS    y # Print 68, 95, 99% confidence intervals
+CHI2_SCALE    1.0 # Scale ML Chi-Squared values to improve confidence intervals
+VERBOSE_LOG    y # Dump information form the run into [MAIN_OUTPUT_FILE].param
+OBS_SED_FILE    y # Write out observed SED/object, .obs_sed
+TEMP_SED_FILE    y # Write out best template fit/object, temp_sed
+POFZ_FILE    y # Write out PofZ/object, .pz
+BINARY_OUTPUT    y # SAVE output files in binary format to save space
+
+## Redshift / Mag prior
+APPLY_PRIOR    y # Apply apparent magnitude prior
+PRIOR_FILE    templates/prior_K_extend.dat # File containing prior grid 
+PRIOR_FILTER    217 # Filter from FILTER_RES corresponding to the columns in PRIOR_FILE
+PRIOR_ABZP    25.1 # AB zeropoint of fluxes in catalog
+
+## Redshift Grid
+FIX_ZSPEC    n # Fix redshift to catalog zspec
+Z_MIN    0.01 # Minimum redshift
+Z_MAX    10.0 # Maximum redshift
+Z_STEP    0.01 # Redshift step size
+Z_STEP_TYPE    0 # 0=ZSTEP, 1=Z_STEP*(1+z)
+
+## Zeropoint Offsets
+GET_ZP_OFFSETS    y # Look for .zeropoint file and compute zeropoint offsets
+ZP_OFFSET_TOL    1.e-4 # Tolerance for iterative fit for zeropoint offsets
+
+## Rest-frame colors
+REST_FILTERS    --- # Comma separated list of rest frame filters to compute
+RF_PADDING    1000. # Padding (Ang) for choosing observed filters around specified rest-frame pair.
+RF_ERRORS    n # Compute RF color errors from p(z)
+Z_COLUMN    z_peak # Redshift to use for rest-frame color calculation (z_a,z_p,z_m1,z_m2,z_peak)
+USE_ZSPEC_FOR_REST    y # Use zspec when available for rest-frame colors
+READ_ZBIN    n # Get redshifts from OUTPUT_DIRECTORY/MAIN_OUTPUT_FILE.zbin rather than fitting them.
+
+## Cosmology
+H0    70.0 # Hubble Constant (km/s/Mpc)
+OMEGA_M    0.3 # Omega_matter
+OMEGA_L    0.7 # Omega_lambda

@@ -1,0 +1,7 @@
+# Filter    Columns    AB/Vega    zp_error    zp_offset
+HST_WFC3_IR_F140W    6, 7    AB    0.01     0.00
+HST_WFC3_IR_F105W    8, 9    AB    0.01     0.00
+HST_WFC3_IR_F160W    10, 11    AB    0.01     0.00
+HST_WFC3_UVIS_F814W    12, 13    AB    0.01     0.00
+ID        1
+M_0        12
