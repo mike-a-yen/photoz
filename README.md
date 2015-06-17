@@ -1,7 +1,9 @@
 # Use EAZY, BPZ, and other photoz template fitters to yield P(z) plots
 
 Setup seechange: (this is where the majority of images come from)
+    ```
     https://github.com/scplbl/seechange
+    ```
 Download EAZY:
     wget http://www.astro.yale.edu/eazy/download/eazy-1.00.tar.gz
 Download BPZ:
