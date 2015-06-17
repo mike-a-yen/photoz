@@ -858,8 +858,9 @@ class ClusterData(object):
                 return code
 
     def SetDetectionFilter(self,filter):
-        self.detectionFilter = filter
-        print 'Set detection filter to: ',self.detectionFilter
+        print 'Setting detection filter to: ',filter
+        print 'Reinitializing ClusterData()......'
+        self.__init__(self.clusterName,detectionFilter = filter)
 
 def WritePickle(dict,file,ASCII=False):
     ''' Takes in dictionary and file name(with path)
