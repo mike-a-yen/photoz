@@ -1,10 +1,15 @@
 ## Use EAZY and BPZ to yield PDF(z) plots
 
+##### First get images from various filters(seechange)
+##### Apply aperature photometry to the objects detected by sep (Kyle Barbary)
+##### Write the AB magnitudes for each filter to a catalog
+##### Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
+##### I have also included the x,y and RA,DEC.
+
 1. Setup seechange: (this is where the majority of images come from)
     ```
     https://github.com/scplbl/seechange
     ```
-    
 2. Download EAZY:
     ```
     wget http://www.astro.yale.edu/eazy/download/eazy-1.00.tar.gz
@@ -28,15 +33,8 @@
     $BPZPATH/test
     $EAZYPATH/doc/PythonDemo/
     ```
-   
 6. Now you need to ingest some hst images into the seechange_db
     Ask Kyle for instructions
-
-First get images from various filters(seechange)
-Apply aperature photometry to the objects detected by sep (Kyle Barbary)
-Write the AB magnitudes for each filter to a catalog
-    Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
-    I have also included the x,y and RA,DEC.
 
 7. Access seechange database
     from shell, run
@@ -112,4 +110,3 @@ Write the AB magnitudes for each filter to a catalog
     cd pzplots
     display ID#_clusterName_typeOfPlot.png
     ```
-    
