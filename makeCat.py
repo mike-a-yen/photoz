@@ -167,52 +167,6 @@ class ClusterData(object):
             WritePickle(pz,'BPZ/pzpickles/'+self.clusterName+ending,ASCII=ASCII)
             print 'Saved BPZ Pickle as '+'BPZ/pzpickles/'+self.clusterName+ending
 
-#    def ProcessEAZYOutput(self,ASCII=False):
-#        ''' Rewrite the standard EAZY output to a more useable format.
-#            Writes a .pkl files with the obj P(z).
-#            pz = {ID:np.array(P(z)),z:np.array(z)}
-#            Saved in binary or ASCII
-#        '''
-#        if ASCII == False: ending = '.pklb'
-#        elif ASCII == True: ending = '.pkl'
-#        pz = {}
-#        for fi in os.listdir('EAZY/%s/'%self.clusterName):
-#            if '.pz' not in fi: continue
-#            # find the obj id number, the number of digits is the length
-#            # of the ClusterID number
-#            id = re.search('\d{%d}'%len(str(self.ClusterID(verbose=False))),fi)
-#            if id == None: continue
-#            id = id.group(0)
-#            fileName = 'EAZY/%s/%s'%(self.clusterName,fi)
-#            if os.path.exists(fileName) == False:
-#                print bcolors.WARNING+fileName+\
-#                      ' does not exist\n Need to run RunEAZY()'+\
-#                      bcolors.ENDC
-#                continue
-#            fo = np.genfromtxt(fileName,names=True)
-#            # lines are formated as
-#            # z chi2 prior pz
-#            if pz.has_key('z') == False:
-#                pz['z'] = fo['z']
-#            if pz.has_key(id) == True:
-#                # make sure you are not assigning the same ID
-#                # to multiple objects
-#                print bcolors.FAIL+'Objects with duplicate ID '+id+ENDC
-#                print bcolors.FAIL+'Continue or Stop?'+bcolors.ENDC
-#                userIn = raw_input('[c/s]').lower()
-#                while True:
-#                    if userIn == 'c':
-#                        pz[id] = np.array(fo['pz']); break
-#                    elif userIn == 's':
-#                        raise SystemExit('Terminated upon user request!')
-#                    else:
-#                        print 'Bad Input: Do not understand %s, Continue or Stop [c/s]?'%userIn
-#            else:
-#                pz[id] = self.NormalizePZ(fo['pz'],fo['z'])
-#        WritePickle(pz,'EAZY/pzpickles/'+self.clusterName+ending,ASCII=ASCII)
-#        print 'Saved EAZY Pickle as '+'EAZY/pzpickles/'+self.clusterName+ending
-#
-
     def ProcessEAZYOutput(self,ASCII=False):
         ''' Rewrite the standard EAZY output to a more useable format.
             Must have the EAZY binary output. Set in EAZY .param file.
@@ -239,8 +193,8 @@ class ClusterData(object):
             elif np.all(pz['z']==zrange) == False:
                 print bcolors.FAIL+'EAZY objects have different z ranges!'+bcolors.ENDC
             id = str(int(obj['ID']))
-            pz[id] = self.NormalizePZ(data,zrange)
-        WritePickle(pz,'EAZY/pzpickles'+self.clusterName+ending,ASCII=ASCII)
+            pz[id] = data
+        WritePickle(pz,'EAZY/pzpickles/'+self.clusterName+ending,ASCII=ASCII)
         print 'Saved EAZY Pickle as '+'EAZY/pzpickles/'+self.clusterName+ending
 
 
