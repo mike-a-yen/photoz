@@ -1,43 +1,35 @@
 ## Use EAZY and BPZ to yield PDF(z) plots
 
-
-Setup seechange: (this is where the majority of images come from)
+1. Setup seechange: (this is where the majority of images come from)
     ```
     https://github.com/scplbl/seechange
     ```
     
-Download EAZY:
+2. Download EAZY:
     ```
     wget http://www.astro.yale.edu/eazy/download/eazy-1.00.tar.gz
     ```
-    
-Download BPZ:
+3. Download BPZ:
     ```
     wget http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz
     ```
-    
-Setup current working directory with BPZ and EAZY tools:
+ 4. Setup current working directory with BPZ and EAZY tools:
     ```
     # $BPZPATH = path to BPZ
     # $EAZYPATH = path to EAZY
     ln -s $BPZPATH/bpz.py BPZSRC
-    
     ln -s $EAZYPATH/filters/FILTER.RES.latest FILTER.RES.latest
-    
     ln -s $EAZYPATH/filters/FILTER.RES.latest.info FILTER.RES.latest.info
-    
     ln -s $EAZYPATH/templates templates
-    
     ln -s $EAZYPATH/src/eazy EAZYSRC
     ```
-    
-With all of this setup check the BPZ and EAZY test cases
+5. With all of this setup check the BPZ and EAZY test cases
     ```
     $BPZPATH/test
     $EAZYPATH/doc/PythonDemo/
     ```
    
-Now you need to ingest some hst images into the seechange_db
+6. Now you need to ingest some hst images into the seechange_db
     Ask Kyle for instructions
 
 First get images from various filters(seechange)
@@ -46,14 +38,14 @@ Write the AB magnitudes for each filter to a catalog
     Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
     I have also included the x,y and RA,DEC.
 
-1. Access seechange database
+7. Access seechange database
     from shell, run
     ```
     see_change_db --data_path data/
     ```
     this opens an ipython prompt
     
-2. Initialize cluster
+8. Initialize cluster
     ```
     import makeCat as MC
     cl = MC.ClusterData('cluster name',detectionFilter='F105W')
@@ -106,7 +98,7 @@ Write the AB magnitudes for each filter to a catalog
         cl.PlotAllMethods()
         ```
 
-3. With all the plots and catalogs made, it is useful to be able to get the P(z)
+9. With all the plots and catalogs made, it is useful to be able to get the P(z)
     from the closest object to a given RA and DEC.
     You specify an RA and DEC, get the P(z) from the object closest to that RA and DEC
     ```
@@ -115,7 +107,7 @@ Write the AB magnitudes for each filter to a catalog
     # sep is the separation in arcsec from the given ra and dec
     ```
     
-4. To view the plots
+10. To view the plots
     ```
     cd pzplots
     display ID#_clusterName_typeOfPlot.png
