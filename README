@@ -1,4 +1,4 @@
-The goal is to use EAZY, BPZ, and other photoz template fitters to yield P(z) plots
+# Use EAZY, BPZ, and other photoz template fitters to yield P(z) plots
 
 Setup seechange: (this is where the majority of images come from)
     https://github.com/scplbl/seechange
@@ -17,8 +17,10 @@ Setup current working directory with BPZ and EAZY tools: ($BPZPATH = path to BPZ
 With all of this setup check the BPZ and EAZY test cases
     $BPZPATH/test
     $EAZYPATH/doc/PythonDemo/
+    
+Now you need to ingest some hst images into the seechange_db
+    Ask Kyle for instructions
 
-On to the main event.
 First get images from various filters(seechange)
 Apply aperature photometry to the objects detected by sep (Kyle Barbary)
 Write the AB magnitudes for each filter to a catalog
