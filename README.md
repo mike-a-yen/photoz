@@ -1,23 +1,26 @@
 ## Use EAZY and BPZ to yield PDF(z) plots
-
-##### First get images from various filters(seechange)
-##### Apply aperature photometry to the objects detected by sep (Kyle Barbary)
-##### Write the AB magnitudes for each filter to a catalog
-##### Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
-##### I have also included the x,y and RA,DEC.
-
+`
+First get images from various filters(seechange)
+Apply aperature photometry to the objects detected by sep (Kyle Barbary)
+Write the AB magnitudes for each filter to a catalog
+Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
+I have also included the x,y and RA,DEC.
+`
 1. Setup seechange: (this is where the majority of images come from)
     ```
     https://github.com/scplbl/seechange
     ```
+
 2. Download EAZY:
     ```
     wget http://www.astro.yale.edu/eazy/download/eazy-1.00.tar.gz
     ```
+
 3. Download BPZ:
     ```
     wget http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz
     ```
+
 4. Setup current working directory with BPZ and EAZY tools:
     ```
     # $BPZPATH = path to BPZ
@@ -28,6 +31,7 @@
     ln -s $EAZYPATH/templates templates
     ln -s $EAZYPATH/src/eazy EAZYSRC
     ```
+
 5. With all of this setup check the BPZ and EAZY test cases
     ```
     $BPZPATH/test
