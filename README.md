@@ -49,9 +49,14 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
     import makeCat as MC
     cl = MC.ClusterData('cluster name',detectionFilter='F105W')
     ```
-    Default detectionFilter is F105W
-    Change if you want to use a different filter to detect objects
-    Can change filter at any time using cl.SetDetectionFilter('filter')
+    Default detectionFilter is F105W.
+    
+    Change if you want to use a different filter to detect objects.
+    
+    Can change filter at any time using
+    ```
+    cl.SetDetectionFilter('filter')
+    ```
 
   1. If the cluster hasn't been analyzed yet run (recommended)
     ```
