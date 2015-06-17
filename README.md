@@ -1,10 +1,7 @@
 ## Use EAZY and BPZ to yield PDF(z) plots
 
-First get images from various filters(seechange)
-Apply aperature photometry to the objects detected by sep (Kyle Barbary)
-Write the AB magnitudes for each filter to a catalog
-Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter 
-I have also included the x,y and RA,DEC.
+First get images from various filters(seechange). Apply aperature photometry to the objects detected by sep (Kyle Barbary)
+Write the AB magnitudes for each filter to a catalog. Catalog needs to include the object ID number (arbitrary), magnitude, and magnitude error in each filter. I have also included the x,y and RA,DEC.
 
 1. Setup seechange: (this is where the majority of images come from)
     ```
@@ -52,21 +49,30 @@ I have also included the x,y and RA,DEC.
     import makeCat as MC
     cl = MC.ClusterData('cluster name',detectionFilter='F105W')
     ```
-    Default detectionFilter is F105W
-    Change if you want to use a different filter to detect objects
-    Can change filter at any time using cl.SetDetectionFilter('filter')
+    Default detectionFilter is F105W.
+    
+    Change if you want to use a different filter to detect objects.
+    
+    Can change filter at any time using
+    ```
+    cl.SetDetectionFilter('filter')
+    ```
 
   1. If the cluster hasn't been analyzed yet run (recommended)
     ```
     cl.FromScratch()
     ```
-    This will run all of the necessary commands to yield P(z) plots
-    Continue to step 3
+    
+    This will run all of the necessary commands to yield P(z) plots.
+    
+    **Continue to step 3**
+    
   2. Check requirements to run properly, this will create all required but non existant directories
         ```
         cl.CheckRequiredDirectories()
         cl.CheckDetectionFilter()
         ```
+        
   3. Write all required files to run BPZ and EAZY
         ```
         cl.WriteCatalog() # for BPZ and EAZY
@@ -78,11 +84,13 @@ I have also included the x,y and RA,DEC.
         cl.ZeroPointEAZY()
         cl.CheckEAZYRequirements() # make sure everything is ready to run EAZY
         ```
+        
   4. Run BPZ and EAZY
         ```
         cl.RunBPZ() # requires symlink setup
         cl.RunEAZY() # requires symlink setup
         ```
+        
   5. Turn the BPZ and EAZY output into a more useable format
         Saves outputs as a pickled (binary or ASCII) dictionary
         {'z':zrange, 'obID':P(z), ...}
@@ -92,6 +100,7 @@ I have also included the x,y and RA,DEC.
         # the best P(z) come from combining the BPZ and EAZY
         cl.CombinePZ(ASCII=False)
         ```
+        
   6. Plot all P(z)'s
         ```
         cl.PlotPickledPZ('BPZ')
