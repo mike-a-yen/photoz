@@ -13,7 +13,7 @@
     ```
     wget http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz
     ```
- 4. Setup current working directory with BPZ and EAZY tools:
+4. Setup current working directory with BPZ and EAZY tools:
     ```
     # $BPZPATH = path to BPZ
     # $EAZYPATH = path to EAZY
