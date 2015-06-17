@@ -62,6 +62,7 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
     ```
     cl.FromScratch()
     ```
+    
     This will run all of the necessary commands to yield P(z) plots
     Continue to step 3
   2. Check requirements to run properly, this will create all required but non existant directories
@@ -69,6 +70,7 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
         cl.CheckRequiredDirectories()
         cl.CheckDetectionFilter()
         ```
+        
   3. Write all required files to run BPZ and EAZY
         ```
         cl.WriteCatalog() # for BPZ and EAZY
@@ -80,11 +82,13 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
         cl.ZeroPointEAZY()
         cl.CheckEAZYRequirements() # make sure everything is ready to run EAZY
         ```
+        
   4. Run BPZ and EAZY
         ```
         cl.RunBPZ() # requires symlink setup
         cl.RunEAZY() # requires symlink setup
         ```
+        
   5. Turn the BPZ and EAZY output into a more useable format
         Saves outputs as a pickled (binary or ASCII) dictionary
         {'z':zrange, 'obID':P(z), ...}
@@ -94,6 +98,7 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
         # the best P(z) come from combining the BPZ and EAZY
         cl.CombinePZ(ASCII=False)
         ```
+        
   6. Plot all P(z)'s
         ```
         cl.PlotPickledPZ('BPZ')
