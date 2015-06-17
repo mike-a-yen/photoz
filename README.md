@@ -16,8 +16,10 @@ Download BPZ:
     wget http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz
     ```
     
-Setup current working directory with BPZ and EAZY tools: ($BPZPATH = path to BPZ, $EAZYPATH = path to EAZY)
+Setup current working directory with BPZ and EAZY tools:
     ```
+    # $BPZPATH = path to BPZ
+    # $EAZYPATH = path to EAZY
     ln -s $BPZPATH/bpz.py BPZSRC
     
     ln -s $EAZYPATH/filters/FILTER.RES.latest FILTER.RES.latest
