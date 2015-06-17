@@ -1,17 +1,21 @@
 ## Use EAZY and BPZ to yield PDF(z) plots
 
+
 Setup seechange: (this is where the majority of images come from)
     ```
     https://github.com/scplbl/seechange
     ```
+    
 Download EAZY:
     ```
     wget http://www.astro.yale.edu/eazy/download/eazy-1.00.tar.gz
     ```
+    
 Download BPZ:
     ```
     wget http://www.stsci.edu/~dcoe/BPZ/bpz-1.99.3.tar.gz
     ```
+    
 Setup current working directory with BPZ and EAZY tools: ($BPZPATH = path to BPZ, $EAZYPATH = path to EAZY)
     ```
     ln -s $BPZPATH/bpz.py BPZSRC
@@ -22,8 +26,10 @@ Setup current working directory with BPZ and EAZY tools: ($BPZPATH = path to BPZ
     ```
     
 With all of this setup check the BPZ and EAZY test cases
+    ```
     $BPZPATH/test
     $EAZYPATH/doc/PythonDemo/
+    ```
     
 Now you need to ingest some hst images into the seechange_db
     Ask Kyle for instructions
