@@ -63,8 +63,10 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
     cl.FromScratch()
     ```
     
-    This will run all of the necessary commands to yield P(z) plots
-    Continue to step 3
+    This will run all of the necessary commands to yield P(z) plots.
+    
+    **Continue to step 3**
+    
   2. Check requirements to run properly, this will create all required but non existant directories
         ```
         cl.CheckRequiredDirectories()
