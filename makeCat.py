@@ -7,12 +7,15 @@ import os
 import sys
 import time
 import re
+import cStringIO
 from subprocess import call
 import logging
 import shutil
 from seechange.controller import Controller
 from seechange.config import config
+setbackup = set
 from seechange.model import *
+set = setbackup
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -31,7 +34,7 @@ import threedhst.eazyPy as eazy
 widgets = [pb.ETA(),pb.Percentage()]
 
 class ClusterData(object):
-    def __init__(self,clusterName,detectionFilter='F105W'):
+    def __init__(self,clusterName,detectionFilter='F105W',**args):
         ''' Create a catalog from data inside see_change_db containing Mag 
         and MagErr for cluster which is then used to run BPZ and EAZY to
         generate files containing P(z) for each object. BPZ and EAZY require 
@@ -39,6 +42,10 @@ class ClusterData(object):
         files through matplotlib to make P(z) plots for each object. This will 
         create all necessary directories, required to run.
         '''
+        self.wantedArgs = {'ra','dec','a','b','theta'}
+        self.args = self.__FormatArgs(args)
+        if self.CheckArgs() == False:
+            raise IOError('Did not meet required arguments for manual aperature')
         self.detectionFilter = detectionFilter
         #load latest images from database in all filters
         self.clusterName = clusterName
@@ -54,36 +61,38 @@ class ClusterData(object):
         hduList = {str(image.filter):image.hdulist for image in self.images.values()}
         self.dataList = {filter:hdu[1].data for filter,hdu in hduList.items()}
         self.dataList = {filter:data.byteswap(True).newbyteorder() for filter,data in self.dataList.items()}
-        for hdu in hduList.values(): hdu.close()        
+        for hdu in hduList.values(): hdu.close()
         self.zeroPoints = {filter:self.ZeroPoint(filter) for filter in self.filters}
-        #set zero point for and pixel size
         # perform background subtraction on all filters
         self.bkgRMS = {filter:self.Background(filter) for filter in self.filters}
-        #perform sep obj detection on detection filter image
+        # perform sep obj detection on detection filter image
         self.objs = self.ImageObjDetection(self.detectionFilter)
+        self.nObjs,self.nManAps = len(self.objs),self.CheckArgs()
         self.detectPixelSize = self.images[self.detectionFilter].pixel_scale
         
-        genTypes = ['ID','x','y','RA','DEC']
-        magTypes = list(np.array([(filter+'mag',filter+'magerr') for filter in self.filters]).flatten())
-        dataTypes = {'names':genTypes+magTypes,'formats':['>i4']+['float' for i in xrange(len(genTypes+magTypes)-1)]}
-        nObjs = len(self.objs)
-        self.objInfo = np.zeros((nObjs),dtype=dataTypes)
+        self.__InitObjInfo()
+
         for filter in self.filters:
             if filter ==  self.detectionFilter:
-                self.objInfo['ID'] = self.IDnum + np.arange(0,int(nObjs))
-                self.objInfo['x'] = self.objs['x']
-                self.objInfo['y'] = self.objs['y']
-                self.objInfo['RA'] = self.objs['RA']
-                self.objInfo['DEC'] = self.objs['DEC']
-                self.objInfo[filter+'mag'],self.objInfo[filter+'magerr'] = self.AperaturePhoto(filter,self.objs)
+                self.objInfo['x'][0:self.nObjs] = self.objs['x']
+                self.objInfo['y'][0:self.nObjs] = self.objs['y']
+                self.objInfo['RA'][0:self.nObjs] = self.objs['RA']
+                self.objInfo['DEC'][0:self.nObjs] = self.objs['DEC']
+                ap = self.AperaturePhoto(filter,self.objs)
+                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
+                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
             else:
                 scale = self.detectPixelSize/self.images[filter].pixel_scale
                 objects = self.objs[:]
-                objects['x'], objects['y'] = self.images[filter].rd_to_xy(self.objs['RA'],
-                                                                          self.objs['DEC'])
+                xy = self.images[filter].rd_to_xy(self.objs['RA'],self.objs['DEC'])
+                objects['x'][0:self.nObjs] = xy[0]
+                objects['y'][0:self.nObjs] = xy[1]
                 objects['a'] = scale*self.objs['a']
                 objects['b'] = scale*self.objs['b']
-                self.objInfo[filter+'mag'],self.objInfo[filter+'magerr'] = self.AperaturePhoto(filter,objects)
+                ap = self.AperaturePhoto(filter,objects)
+                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
+                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
+
 
     def FromScratch(self):
         ''' Run all checks and create all necessary directories
@@ -103,6 +112,8 @@ class ClusterData(object):
         self.CheckEAZYRequirements()
         self.RunBPZ()
         self.RunEAZY()
+        #self.RunBPZ()
+        #self.RunEAZY()
         # ASCII = False for Binary (speed)
         # ASCII = True for ASCII (human readable)
         self.ProcessBPZOutput(ASCII=False)
@@ -182,9 +193,8 @@ class ClusterData(object):
             raise RuntimeError('Must create binary ouput from EAZY, set in .param file, and run cl.RunEAZY()')
         if os.path.exists('CATALOGS/%s.cat'%self.clusterName) == False:
             raise RuntimeError('Must write catalog, try running cl.WriteCatalog()')
-        fi = np.genfromtxt('CATALOGS/%s.cat'%self.clusterName,names=True)
         pz = {}
-        for idx,obj in enumerate(fi):
+        for idx,obj in enumerate(self.objInfo):
             zrange, data = eazy.getEazyPz(idx,
                                           MAIN_OUTPUT_FILE='EAZY/%s/%s'%(self.clusterName,self.clusterName),
                                           OUTPUT_DIRECTORY='./')
@@ -330,6 +340,31 @@ class ClusterData(object):
             pbar.update(i)
         pbar.finish()
         print bcolors.GREEN+str(len(comb)-1)+' PDF(z) Triple Plots Created!'+bcolors.ENDC
+
+    def PlotEAZYSED(self):
+        if os.path.exists('EAZY/%s/%s.zout'%(self.clusterName,self.clusterName)) == False:
+            print bcolors.FAIL+'Can not make EAZY SED Plots'+bcolors.ENDC
+            print bcolors.FAIL+'Do not have standard EAZY binary output'+bcolors.ENDC
+            raise RuntimeError('Must create binary ouput from EAZY, set in .param file, and run cl.RunEAZY()')
+        if os.path.exists('CATALOGS/%s.cat'%self.clusterName) == False:
+            raise RuntimeError('Must write catalog, try running cl.WriteCatalog()')
+        fig,ax = plt.subplots(1,2,sharey=False)
+        pbar = pb.ProgressBar(widgets=widgets,maxval=len(fi)-1).start()
+        for idx,obj in enumerate(self.objInfo):
+            old_stdout = sys.stdout
+            sys.stdout = cStringIO.StringIO()
+            axes = eazy.plotExampleSED(idx=idx,
+                                       axes = ax,
+                                       MAIN_OUTPUT_FILE = 'EAZY/%s/%s'%(self.clusterName,self.clusterName),
+                                       OUTPUT_DIRECTORY = './')
+            sys.stdout = old_stdout
+            for a in ax: a.autoscale(axis='y',tight=True)
+            id = str(int(obj['ID']))
+            plt.savefig('sedplots/%s_%s_EAZY.png'%(id,self.clusterName))
+            for a in ax: a.cla()
+            pbar.update(idx)
+        pbar.finish()
+        print bcolors.GREEN+'SED + P(z) Plots created!'+bcolors.ENDC
             
     def Background(self,filter):
         print 'SEP Background subtraction for %s......'%filter
@@ -354,6 +389,38 @@ class ClusterData(object):
         newObjs['RA'], newObjs['DEC'] = self.images[filter].xy_to_rd(objs['x'],objs['y'])
 
         return newObjs
+
+    def BackfillObjInfo(self,objs):
+        ''' Fill the objInfo variable with the specified objs.
+            Fills objInfo from the back.
+        '''
+
+    def ManualAperatureAdd(self,**args):
+        ''' Add an aperature by hand after __init__'''
+        
+
+    def ManualAperatureMagnitude(self,filter,inRA,inDEC,a,b,theta):
+        ''' Drop an aperature of specified size onto an
+            image, and perform the aperature photometry.
+            a,b are the major and minor axis of the aperature
+                ellipse is the default, create a circle by 
+                setting the value of a = b
+        '''
+        x,y = self.images[filter].rd_to_xy(inRA,inDEC)
+        kronrad, krflag = sep.kron_radius(self.dataList[filter],
+                                          x, y, a, b, theta,6.0)
+        flux, fluxerr, flag = sep.sum_ellipse(self.dataList[filter],
+                                              x, y, a, b, theta,
+                                              2.5*kronrad, subpix=1,
+                                              err=self.bkgRMS[filter])
+
+        mag = -2.5*np.log10(flux) + self.zeroPoints[filter]
+        fluxup = flux + fluxerr
+        fluxdown = flux - fluxerr
+        magup = -2.5*np.log10(fluxdown) + self.zeroPoints[filter]
+        magdown = -2.5*np.log10(fluxup) + self.zeroPoints[filter]
+        magerr = ((magup-mag)+(mag-magdown))/2.
+        return mag, magerr
 
     def AperaturePhoto(self,filter,objs):
         print 'Running Aperature Photometry on %s......'%filter
@@ -428,11 +495,80 @@ class ClusterData(object):
             raise Exception("Do not have information for filter %s" %filter)
         return zeroPoint
 
+    def NumberOfManualAperatures(self):
+        # make sure that the length of each wanted arg is the same
+        if len(set(map(len,self.args.values()))) != 1:
+            raise IOError('Number of manual aperatures can not be set, recieved different '+ \
+                          'lenghs of input parameters')
+        return iter(set(map(len,self.args.values()))).next()
+
+    def DeleteUnwantedArgs(self,args):
+        toDelete = {k for k in args.keys() if k not in self.wantedArgs}
+        args = {k:v for k,v in args.items() if k in self.wantedArgs}
+        if len(toDelete) != 0:
+            print bcolors.WARNING+'Found unwated arguments'+bcolors.ENDC
+            print bcolors.WARNING+' '.join(toDelete)+bcolors.ENDC
+            print bcolors.WARNING+'Deleted all unwanted arguments'+bcolors.ENDC
+        return args
+
+    def __FormatArgs(self,args):
+        ''' Take the optional arguments and reformat them to a
+            dictionary of numpy arrays
+        '''
+        if isinstance(args,dict) == False:
+            print bcolors.FAIL+'Optional input arguments not passed in correctly.'+bcolors.ENDC
+            raise IOError('Did not receive a dictionary, got a %s'%str(type(args)))
+        args = self.DeleteUnwantedArgs(args)
+        argKeys = {k for k in args.keys()}
+        if len(args) == 0:
+            print bcolors.CYAN+'No args for manual aperature detected'+bcolors.ENDC
+            args = {k:np.array([]) for k in self.wantedArgs}
+        # check if the arguments in args are number types and make them a np.array
+        if np.all([isinstance(i,(int,float,long)) for i in args.values()]) == True:
+            args = {k:np.array([i]) for k,i in args.items()}
+        # check if the arguments in args are lists and make them a np.array
+        elif np.all([isinstance(i,list) for i in args.values()]) == True:
+            args = {k:np.array(i) for k,i in args.items()}
+        # all args must be of the same data type
+        elif len(set(map(type,args.values()))) != 1:
+            print bcolors.FAIL+'Args are not of the same data type'+bcolors.ENDC
+            print bcolors.FAIL+''.join(set(map(str,map(type,args.values()))))+bcolors.ENDC
+            raise IOError('Args not of the same data type, '+ \
+                          'args must be all number types, lists, or np arrays')
+        # if the args are not any of these, they are something that can not be used
+        elif np.any(isinstance(i,(int,float,long,list,np.ndarray))==False for i in args.values()) == True:
+            print bcolors.FAIL+'Did not recieve required data types for manual aperatures'+bcolors.ENDC
+            raise IOError('Can only take number types, lists, or numpy arrays')
+        return args
+
+    def CheckArgs(self):
+        ''' Check the args passed to the __init__ are appropriate 
+            and can be used. args should be
+            ra, dec - must be inside image
+            a,b - major,minor axis of ellipse
+            theta - tilt of ellipse
+            all args can be entered as ints, floats, lists, or numpy arrays
+        '''
+        goodToGo = False
+        self.args = self.__FormatArgs(self.args)
+        argKeys = {k for k in self.args.keys()}
+        # if no arguments are passed in argsEmpty == True
+        argsEmpty = np.all([a.size == 0 for a in self.args.values()])
+        if argsEmpty == True:
+            goodToGo = True
+        elif self.wantedArgs == argKeys and argsEmpty == False:
+            print bcolors.GREEN+'All required arguments for Manual Aperature met'+bcolors.ENDC
+            goodToGo = True
+        elif len(self.wantedArgs.difference(argKeys)) != 0:
+            print bcolors.FAIL+'Missing necessary arguments'+bcolors.ENDC
+            print bcolors.FAIL+','.join(self.wantedArgs.difference(argKeys))+bcolors.ENDC
+        return goodToGo
+
     def CheckRequiredDirectories(self):
         '''Check for CATALOGS, BPZ, and EAZY directories
            in pwd, if they do not exist, make them'''
         nothingMade = True
-        reqDirs = ['CATALOGS', 'BADCATS','pzplots',
+        reqDirs = ['CATALOGS', 'BADCATS','pzplots','sedplots',
                    'COMBINED', 'COMBINED/pzpickles',
                    'EAZY', 'EAZY/pzpickles','EAZY/'+self.clusterName,
                    'BPZ','BPZ/pzpickles']
@@ -561,7 +697,7 @@ class ClusterData(object):
             else:
                 id = match['ID']
                 
-    def MatchRADECtoOBJ(self,inRA,inDEC,threshold=1.0):
+    def MatchRADECtoOBJ(self,inRA,inDEC,threshold=10.):
         ''' Given an RA and DEC, return the closest object
             found by sep. 
             threshold is how close an object must be to the
@@ -574,6 +710,35 @@ class ClusterData(object):
             return None
         else:
             return self.objInfo[np.argsort(separation)[0]],np.sort(separation)[0]
+
+    def GetEAZYidx(self,threshold=100.,**param):
+        ''' Given a description of an object return the idx commonly 
+            used by EAZY for identifying objects. EAZY can not use 
+            the ID numbers generated by this code in the catalogs.
+            args for **param can be:
+            id or ra and dec, threshold (optional)
+            Specifying ra and dec takes priority over id
+        '''
+        if param.has_key('ra') == True and param.has_key('dec') == True:
+            obj = self.MatchRADECtoOBJ(param['ra'],param['dec'],
+                                           threshold=threshold)
+            if obj == None:
+                print bcolors.FAIL+'Threshold to find object index is too small'+bcolors.ENDC
+                print bcolors.FAIL+'Increase threshold from %f'+bcolors.ENDC%threshold
+                raise RuntimeError('Need to increase the threshold.')
+            id = obj['ID']
+        elif param.has_key('id') == True:
+            id = param['id']
+        for idx,obj in enumerate(self.objInfo):
+            if obj['ID'] != id: continue
+            return idx
+
+    def __InitObjInfo(self):
+        genTypes = ['ID','x','y','RA','DEC']
+        magTypes = list(np.array([(filter+'mag',filter+'magerr') for filter in self.filters]).flatten())
+        dataTypes = {'names':genTypes+magTypes,'formats':['>i4']+['float' for i in xrange(len(genTypes+magTypes)-1)]}
+        self.objInfo = np.zeros((self.nObjs+self.nManAps),dtype=dataTypes)
+        self.objInfo['ID'] = self.IDnum + np.arange(0,(self.nObjs+self.nManAps))
 
     def ClusterID(self,verbose=True):
         name = self.clusterName
@@ -850,6 +1015,15 @@ def OpenPickle(file):
         raise IOError('File %s not understood, require a .pkl or .pklb extension'%file)
     fo.close()
     return dict
+
+def RunInParallel(*functions):
+    processes = []
+    for fn in functions:
+        p = mp.Process(target=fn)
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
 #if __name__ == '__main__':
 #    cl = ClusterData('SPT0205')
 #    cl.ParamEAZY()
