@@ -69,6 +69,7 @@ class ClusterData(object):
         
         self.__InitObjInfo()
         self.SEPFillObjInfo()
+        self.ManApFillObjInfo()
         # fill in ObjInfo with objects detected by sep
  #       for filter in self.filters:
  #           if filter ==  self.detectionFilter:
