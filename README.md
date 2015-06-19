@@ -127,16 +127,24 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
 * In addition to objects detected by sep (Kyle Barbary), you can specify your own RA, DEC, and aperature size, and perform photo z measurements on these new 'objects'. This might be useful if something in the image is not detected by sep, or you know you want a photo z measurement of a particular RA and DEC.
   * For the aperture size you need to specify a major (a) and minor (b) axis as well as an orientation angle (theta).
   * Arguments for ra, dec, a, b, theta can be number types, lists, or np.ndarrays. They must be of the same type and have the same length.
+ 
   1. You can add your aperture when initializing ClusterData.
-    1. cl = ClusterData(ra=...,dec=...,a=...,b=...,theta=...)
-    2. cl.ManApFillObjInfo()
-    3. cl.WriteCatalog()
+  ```
+  cl = ClusterData(ra=...,dec=...,a=...,b=...,theta=...)
+  cl.WriteCatalog() # write the aperture info to catalog
+  ```
+  
   2. You can also add an aperture on the fly.
-    1. cl.ManualApertureAdd(ra=...,dec=...,a=...,b=...,theta=...)
-      * This will automatically run ManApFillObjInfo()
-    2. cl.WriteCatalog()
+  ```
+  cl.ManualApertureAdd(ra=...,dec=...,a=...,b=...,theta=...)
+  # This will automatically run ManApFillObjInfo() and update cl.objInfo
+  cl.WriteCatalog()
+  ```
+  
   3. To remove your apertures
-    1. cl.ManualApertureRemove(ra=...,dec=...)
-      * Removes the aperture at specified RA and DEC and deletes aperture info from objInfo
-    2. cl.ManualApertureRemove(purge=True)
-      * Removes all apertures and deletes aperture info from objInfo
+  ```
+  cl.ManualApertureRemove(ra=...,dec=...)
+  # Removes the aperture at specified RA and DEC and deletes aperture info from objInfo
+  cl.ManualApertureRemove(purge=True)
+  # Removes all apertures and deletes aperture info from objInfo
+   ```
