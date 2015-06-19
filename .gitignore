@@ -1,10 +1,10 @@
 *~
-CATALOGS/
-EAZY/
-BPZ/
-pzplots/
-sedplots/
-BADCATS/
+CATALOGS/*
+EAZY/*
+BPZ/*
+pzplots/*
+sedplots/*
+BADCATS/*
 BadBPZ/
 COMBINED/
 data/
