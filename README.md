@@ -108,14 +108,17 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
         cl.PlotPickledPZ('COMBINED')
         cl.PlotAllMethods()
         ```
-
+  7. Plot SED fits from BPZ and EAZY (only have EAZY right now)
+      ```
+      cl.PlotEAZYSED()
+      ```
 9. With all the plots and catalogs made, it is useful to be able to get the P(z)
     from the closest object to a given RA and DEC.
     You specify an RA and DEC, get the P(z) from the object closest to that RA and DEC
     ```
-    objInfo, sep = cl.MatchRADECtoOBJ(ra,dec) # ra and dec should be unitless in degree format
+    objInfo, separation = cl.MatchRADECtoOBJ(ra,dec,threshold=10.) # ra and dec should be unitless in degree format
     # objInfo contains all information in the catalog for this object
-    # sep is the separation in arcsec from the given ra and dec
+    # separation in arcsec from the given ra and dec
     ```
     
 10. To view the plots
