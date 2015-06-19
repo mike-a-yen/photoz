@@ -128,20 +128,20 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
   * For the aperture size you need to specify a major (a) and minor (b) axis as well as an orientation angle (theta).
   * Arguments for ra, dec, a, b, theta can be number types, lists, or np.ndarrays. They must be of the same type and have the same length.
  
-  1. You can add your aperture when initializing ClusterData.
+1. You can add your aperture when initializing ClusterData.
   ```
   cl = ClusterData(ra=...,dec=...,a=...,b=...,theta=...)
   cl.WriteCatalog() # write the aperture info to catalog
   ```
   
-  2. You can also add an aperture on the fly.
+2. You can also add an aperture on the fly.
   ```
   cl.ManualApertureAdd(ra=...,dec=...,a=...,b=...,theta=...)
   # This will automatically run ManApFillObjInfo() and update cl.objInfo
   cl.WriteCatalog()
   ```
   
-  3. To remove your apertures
+3. To remove your apertures
   ```
   cl.ManualApertureRemove(ra=...,dec=...)
   # Removes the aperture at specified RA and DEC and deletes aperture info from objInfo
