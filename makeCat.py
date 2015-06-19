@@ -125,9 +125,7 @@ class ClusterData(object):
             print bcolors.WARNING+'Can not Run BPZ yet, missing required files'+bcolors.ENDC
         else:
             print 'Calling BPZ......'
-            #callStr = 'python /home/scpdata05/clustersn/photoz/bpz-1.99.3/bpz.py CATALOGS/%s.cat -P CATALOGS/%s.pars'%(self.clusterName,self.clusterName)
             callStr = 'python BPZSRC CATALOGS/%s.cat -P CATALOGS/%s.pars'%(self.clusterName,self.clusterName)
-            
             print callStr
             call(callStr,shell=True)
 
@@ -138,7 +136,6 @@ class ClusterData(object):
         else:
             print 'Calling EAZY......'
             # more details in ParamEAZY function or .param file
-            #callStr = '/home/scpdata05/clustersn/photoz/eazy-photoz/src/eazy -p CATALOGS/%s.param -t CATALOGS/%s.translate -z CATALOGS/%s.zeropoint'%(self.clusterName,self.clusterName,self.clusterName)
             callStr = './EAZYSRC -p CATALOGS/%s.param -t CATALOGS/%s.translate -z CATALOGS/%s.zeropoint'%(self.clusterName,self.clusterName,self.clusterName)
             print callStr
             call(callStr,shell=True)
@@ -283,10 +280,6 @@ class ClusterData(object):
             lowerLim = min([0.0,1.3*min(data)])
             upperLim = 1.3*max(data)
             ax.set_ylim(lowerLim,upperLim)
-            #ax.draw_artist(ax.patch)
-            #ax.draw_artist(line)
-            #fig.canvas.update()
-            #fig.canvas.flush_events()
             saveName = 'pzplots/%s_%s_%s'%(id,self.clusterName,pzMethod)
             fig.savefig(saveName+'.png')
             cPickle.dump(ax,file(saveName+'.pklb','wb'))
@@ -316,19 +309,14 @@ class ClusterData(object):
             line1.set_ydata(bpz[id])
             top1, bottom1 = 1.3*max(bpz[id]), min([0.0,1.3*min(bpz[id])])
             ax1.set_ylim(bottom1,top1)
-            #ax1.draw_artist(ax1.patch); ax1.draw_artist(line1)
             ax2.set_title('EAZY PDF(z) %s %s'%(self.clusterName,id))
             line2.set_ydata(eazy[id])
             top2, bottom2 = 1.3*max(eazy[id]), min([0.0,1.3*min(eazy[id])])
             ax2.set_ylim(bottom2,top2)
-            #ax2.draw_artist(ax2.patch); ax2.draw_artist(line2)
             ax3.set_title('COMBINED PDF(z) %s %s'%(self.clusterName,id))
             line3.set_ydata(comb[id])
             top3, bottom3 = 1.3*max(comb[id]), min([0.0,1.3*min(comb[id])])
             ax3.set_ylim(bottom3,top3)
-            #ax3.draw_artist(ax3.patch); ax3.draw_artist(line3)
-            #fig.canvas.update()
-            #fig.canvas.flush_events()
             saveName = 'pzplots/%s_%s_ALL'%(id,self.clusterName)
             fig.savefig(saveName+'.png')
             cPickle.dump(fig,file(saveName+'.pklb','wb'))
