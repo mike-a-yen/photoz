@@ -334,19 +334,23 @@ class ClusterData(object):
             raise RuntimeError('Must create binary ouput from EAZY, set in .param file, and run cl.RunEAZY()')
         if os.path.exists('CATALOGS/%s.cat'%self.clusterName) == False:
             raise RuntimeError('Must write catalog, try running cl.WriteCatalog()')
+        fi = np.genfromtxt('CATALOGS/%s.cat'%self.clusterName,names=True)
         fig,ax = plt.subplots(1,2,sharey=False)
         pbar = pb.ProgressBar(widgets=widgets,maxval=len(fi)-1).start()
-        for idx,obj in enumerate(self.objInfo):
+        for idx,obj in enumerate(fi):
             old_stdout = sys.stdout
             sys.stdout = cStringIO.StringIO()
             axes = eazy.plotExampleSED(idx=idx,
                                        axes = ax,
                                        MAIN_OUTPUT_FILE = 'EAZY/%s/%s'%(self.clusterName,self.clusterName),
                                        OUTPUT_DIRECTORY = './')
-            sys.stdout = old_stdout
-            for a in ax: a.autoscale(axis='y',tight=True)
             id = str(int(obj['ID']))
-            plt.savefig('sedplots/%s_%s_EAZY.png'%(id,self.clusterName))
+            sys.stdout = old_stdout
+            for a in ax:
+                a.autoscale(axis='y',tight=True)
+            saveName = 'sedplots/%s_%s_EAZYSED'%(id,self.clusterName)
+            cPickle.dump(fig,file(saveName+'.pklb','wb'))
+            plt.savefig(saveName+'.png')
             for a in ax: a.cla()
             pbar.update(idx)
         pbar.finish()
@@ -791,7 +795,7 @@ class ClusterData(object):
             if match == None: continue
             else:
                 id = match['ID']
-                
+
     def MatchRADECtoOBJ(self,inRA,inDEC,threshold=10.):
         ''' Given an RA and DEC, return the closest object
             found by sep. 
@@ -814,6 +818,7 @@ class ClusterData(object):
             id or ra and dec, threshold (optional)
             Specifying ra and dec takes priority over id
         '''
+        fi = np.genfromtxt('CATALOGS/%s.cat'%self.clusterName,names=True)
         if param.has_key('ra') == True and param.has_key('dec') == True:
             obj = self.MatchRADECtoOBJ(param['ra'],param['dec'],
                                            threshold=threshold)
@@ -824,7 +829,7 @@ class ClusterData(object):
             id = obj['ID']
         elif param.has_key('id') == True:
             id = param['id']
-        for idx,obj in enumerate(self.objInfo):
+        for idx,obj in enumerate(fi):
             if obj['ID'] != id: continue
             return idx
 
