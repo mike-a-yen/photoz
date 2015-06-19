@@ -1,8 +1,3 @@
-# Run aperture photometry on images on all filters
-# Detect object using SEP
-# Generate RA, DEC, Flux, Flux Error for each object
-# Match objects across different filters assign an ID
-# Make catalog ready to be passed to BPZ and EAZY
 import os
 import sys
 import time
@@ -71,7 +66,7 @@ class ClusterData(object):
         self.detectPixelSize = self.images[self.detectionFilter].pixel_scale
         
         self.__InitObjInfo()
-
+        # fill in ObjInfo with objects detected by sep
         for filter in self.filters:
             if filter ==  self.detectionFilter:
                 self.objInfo['x'][0:self.nObjs] = self.objs['x']
@@ -390,11 +385,32 @@ class ClusterData(object):
 
         return newObjs
 
-    def BackfillObjInfo(self,objs):
-        ''' Fill the objInfo variable with the specified objs.
-            Fills objInfo from the back.
-        '''
+    def SEPFillObjInfo(self):
+        ''' Fill the objInfo variable with objects found by sep'''
+        for filter in self.filters:
+            if filter ==  self.detectionFilter:
+                self.objInfo['x'][0:self.nObjs] = self.objs['x']
+                self.objInfo['y'][0:self.nObjs] = self.objs['y']
+                self.objInfo['RA'][0:self.nObjs] = self.objs['RA']
+                self.objInfo['DEC'][0:self.nObjs] = self.objs['DEC']
+                ap = self.AperaturePhoto(filter,self.objs)
+                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
+                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
+            else:
+                scale = self.detectPixelSize/self.images[filter].pixel_scale
+                objects = self.objs[:]
+                xy = self.images[filter].rd_to_xy(self.objs['RA'],self.objs['DEC'])
+                objects['x'][0:self.nObjs] = xy[0]
+                objects['y'][0:self.nObjs] = xy[1]
+                objects['a'] = scale*self.objs['a']
+                objects['b'] = scale*self.objs['b']
+                ap = self.AperaturePhoto(filter,objects)
+                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
+                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
 
+    def ManApFillObjInfo(self,aps):
+        ''' Fill the objInfo variable with hand drawn aperatures '''
+        
     def ManualAperatureAdd(self,**newargs):
         ''' Add an aperature by hand after __init__
             Must add all wanted arguments, to check
