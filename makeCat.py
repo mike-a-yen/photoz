@@ -37,10 +37,6 @@ class ClusterData(object):
         files through matplotlib to make P(z) plots for each object. This will 
         create all necessary directories, required to run.
         '''
-        self.wantedArgs = {'ra','dec','a','b','theta'}
-        self.args = self.__FormatArgs(args)
-        if self.CheckArgs(self.args) == False:
-            raise IOError('Did not meet required arguments for manual aperature')
         self.detectionFilter = detectionFilter
         #load latest images from database in all filters
         self.clusterName = clusterName
@@ -56,7 +52,13 @@ class ClusterData(object):
         hduList = {str(image.filter):image.hdulist for image in self.images.values()}
         self.dataList = {filter:hdu[1].data for filter,hdu in hduList.items()}
         self.dataList = {filter:data.byteswap(True).newbyteorder() for filter,data in self.dataList.items()}
-        for hdu in hduList.values(): hdu.close()
+        #for hdu in hduList.values(): hdu.close()
+
+        self.wantedArgs = {'ra','dec','a','b','theta'}
+        self.manAps = self.FormatArgs(args)
+        if self.CheckArgs(self.manAps) == False:
+            raise IOError('Did not meet required arguments for manual aperature')
+
         self.zeroPoints = {filter:self.ZeroPoint(filter) for filter in self.filters}
         # perform background subtraction on all filters
         self.bkgRMS = {filter:self.Background(filter) for filter in self.filters}
@@ -66,29 +68,29 @@ class ClusterData(object):
         self.detectPixelSize = self.images[self.detectionFilter].pixel_scale
         
         self.__InitObjInfo()
+        self.SEPFillObjInfo()
         # fill in ObjInfo with objects detected by sep
-        for filter in self.filters:
-            if filter ==  self.detectionFilter:
-                self.objInfo['x'][0:self.nObjs] = self.objs['x']
-                self.objInfo['y'][0:self.nObjs] = self.objs['y']
-                self.objInfo['RA'][0:self.nObjs] = self.objs['RA']
-                self.objInfo['DEC'][0:self.nObjs] = self.objs['DEC']
-                ap = self.AperaturePhoto(filter,self.objs)
-                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
-                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
-            else:
-                scale = self.detectPixelSize/self.images[filter].pixel_scale
-                objects = self.objs[:]
-                xy = self.images[filter].rd_to_xy(self.objs['RA'],self.objs['DEC'])
-                objects['x'][0:self.nObjs] = xy[0]
-                objects['y'][0:self.nObjs] = xy[1]
-                objects['a'] = scale*self.objs['a']
-                objects['b'] = scale*self.objs['b']
-                ap = self.AperaturePhoto(filter,objects)
-                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
-                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
-
-
+ #       for filter in self.filters:
+ #           if filter ==  self.detectionFilter:
+ #               self.objInfo['x'] = self.objs['x']
+ #               self.objInfo['y'] = self.objs['y']
+ #               self.objInfo['RA'] = self.objs['RA']
+ #               self.objInfo['DEC'] = self.objs['DEC']
+ #               ap = self.AperaturePhoto(filter,self.objs)
+ #               self.objInfo[filter+'mag'] = ap[0]
+ #               self.objInfo[filter+'magerr'] = ap[1]
+ #           else:
+ #               scale = self.detectPixelSize/self.images[filter].pixel_scale
+ #               objects = self.objs[:]
+ #               xy = self.images[filter].rd_to_xy(self.objs['RA'],self.objs['DEC'])
+ #               objects['x'] = xy[0]
+ #               objects['y'] = xy[1]
+ #               objects['a'] = scale*self.objs['a']
+ #               objects['b'] = scale*self.objs['b']
+ #               ap = self.AperaturePhoto(filter,objects)
+ #               self.objInfo[filter+'mag'] = ap[0]
+ #               self.objInfo[filter+'magerr'] = ap[1]       
+ #
     def FromScratch(self):
         ''' Run all checks and create all necessary directories
             and files to make P(z) plots.
@@ -377,57 +379,105 @@ class ClusterData(object):
         ''' Fill the objInfo variable with objects found by sep'''
         for filter in self.filters:
             if filter ==  self.detectionFilter:
-                self.objInfo['x'][0:self.nObjs] = self.objs['x']
-                self.objInfo['y'][0:self.nObjs] = self.objs['y']
-                self.objInfo['RA'][0:self.nObjs] = self.objs['RA']
-                self.objInfo['DEC'][0:self.nObjs] = self.objs['DEC']
+                self.objInfo['x'] = self.objs['x']
+                self.objInfo['y'] = self.objs['y']
+                self.objInfo['RA'] = self.objs['RA']
+                self.objInfo['DEC'] = self.objs['DEC']
                 ap = self.AperaturePhoto(filter,self.objs)
-                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
-                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
+                self.objInfo[filter+'mag'] = ap[0]
+                self.objInfo[filter+'magerr'] = ap[1]
             else:
                 scale = self.detectPixelSize/self.images[filter].pixel_scale
                 objects = self.objs[:]
                 xy = self.images[filter].rd_to_xy(self.objs['RA'],self.objs['DEC'])
-                objects['x'][0:self.nObjs] = xy[0]
-                objects['y'][0:self.nObjs] = xy[1]
+                objects['x'] = xy[0]
+                objects['y'] = xy[1]
                 objects['a'] = scale*self.objs['a']
                 objects['b'] = scale*self.objs['b']
                 ap = self.AperaturePhoto(filter,objects)
-                self.objInfo[filter+'mag'][0:self.nObjs] = ap[0]
-                self.objInfo[filter+'magerr'][0:self.nObjs] = ap[1]
+                self.objInfo[filter+'mag'] = ap[0]
+                self.objInfo[filter+'magerr'] = ap[1]
 
-    def ManApFillObjInfo(self,aps):
-        ''' Fill the objInfo variable with hand drawn aperatures '''
-        
+    def ManApFillObjInfo(self):
+        ''' Fill the objInfo variable with hand drawn aperatures 
+            aps is the args dictionary containing the ra, dec, a,
+            b, and theta of the hand drawn aperatures
+        '''
+        if len(self.manAps) == 0:
+            self.objInfo = np.resize(self.objInfo[0:self.nObjs],self.nObjs)
+        else:
+            # extend size of objInfo to include aps
+            lastID = self.objInfo['ID'][-len(self.manAps)]
+            self.objInfo = np.resize(self.objInfo[0:self.nObjs],self.nObjs+len(self.manAps))
+            for filter in self.filters:
+                if filter == self.detectionFilter:
+                    self.objInfo['ID'][-len(self.manAps):] = np.arange(lastID+1,
+                                                               lastID+1+len(self.manAps))
+                    xy = self.images[filter].rd_to_xy(self.manAps['ra'],self.manAps['dec'])
+                    self.objInfo['x'][-len(self.manAps):] = xy[0]
+                    self.objInfo['y'][-len(self.manAps):] = xy[1]
+                    self.objInfo['RA'][-len(self.manAps):] = self.manAps['ra']
+                    self.objInfo['DEC'][-len(self.manAps):] = self.manAps['dec']
+                    apMag = self.ManualAperatureMagnitude(filter,
+                                                          self.manAps['ra'],
+                                                          self.manAps['dec'],
+                                                          self.manAps['a'],
+                                                          self.manAps['b'],
+                                                          self.manAps['theta'])
+                    self.objInfo[filter+'mag'][-len(self.manAps):] = apMag[0]
+                    self.objInfo[filter+'magerr'][-len(self.manAps):] = apMag[1]
+                else:
+                    scale = self.detectPixelSize/self.images[filter].pixel_scale
+                    apertures = self.manAps[:]
+                    apertures['a'][-len(self.manAps):] = scale*self.manAps['a']
+                    apertures['b'][-len(self.manAps):] = scale*self.manAps['b']
+                    apMag = self.ManualAperatureMagnitude(filter,apertures['ra'], 
+                                                          apertures['dec'], apertures['a'],
+                                                          apertures['b'], apertures['theta'])
+                    self.objInfo[filter+'mag'][-len(self.manAps):] = apMag[0]
+                    self.objInfo[filter+'magerr'][-len(self.manAps):] = apMag[1]
+            
     def ManualAperatureAdd(self,**newargs):
         ''' Add an aperature by hand after __init__
             Must add all wanted arguments, to check
             what they are do cl.wantedArgs
         '''
-        newargs = self.__FormatArgs(newargs)
+        newargs = self.FormatArgs(newargs)
         if self.CheckArgs(newargs) == True:
-            for k,v in newargs.items():
-                self.args[k] = np.concatenate((self.args[k],v))
-            self.args = self.__FormatArgs(self.args)
-            self.CheckArgs(self.args)
+            self.manAps = np.concatenate((self.manAps,newargs))
             print bcolors.GREEN+'Added new aperatures'+bcolors.ENDC
+            self.ManApFillObjInfo()
+            print bcolors.GREEN+'Updated objInfo with new apertures'+bcolors.ENDC
+            print bcolors.GREEN+'Make sure to update the catalog and rerun P(z) methods'+ \
+                bcolors.ENDC
         else:
             print bcolors.FAIL+'Aperature arguments not added'+bcolors.ENDC
             print bcolors.FAIL+'Check the argument validity by passing to ' \
                   'cl.CheckArgs(args)'+bcolors.ENDC
     
-    def ManualAperatureRemove(self,ra,dec):
-        idx1 = np.where(self.args['ra'] == ra)[0]
-        idx2 = np.where(self.args['dec'] == dec)[0]
-        killIdx = np.intersect1d(idx1,idx2)
-        if len(killIdx) == 0:
-            print bcolors.FAIL+'Could not delete aperatures, ' \
-                  'specified RA and DEC do no agree on the same aperature'+bcolors.ENDC
-        else:
-            if len(killIdx) >  1:
-                print bcolors.WARNING+'Deleting %d aperatures'%len(idx1)+bcolors.ENDC
-            self.args = {k:np.delete(v,killIdx) for k,v in self.args.items()}
-            print bcolors.CYAN+'Deleted aperatures'+bcolors.ENDC
+    def ManualAperatureRemove(self,ra=[],dec=[],purge=False):
+        ''' Remove any hand drawn aperatures by specifying its ra and dec
+            turn purge to True to delete all aperatures
+        '''
+        if len(ra) > 0 and len(dec) > 0:
+            idx1 = np.where(self.manAps['ra'] == ra)[0]
+            idx2 = np.where(self.manAps['dec'] == dec)[0]
+            killIdx = np.intersect1d(idx1,idx2)
+            if len(killIdx) == 0:
+                print bcolors.FAIL+'Could not delete aperatures, ' \
+                    'specified RA and DEC do no agree on the same aperature'+bcolors.ENDC
+            else:
+                if len(killIdx) >  1:
+                    print bcolors.WARNING+'Deleting %d aperatures'%len(idx1)+bcolors.ENDC
+                self.manAps = np.delete(self.manAps,killIdx)
+                print bcolors.CYAN+'Deleted aperatures'+bcolors.ENDC
+                self.ManApFillObjInfo()
+                print bcolors.CYAN+'Removed aperatures from objInfo'+bcolors.ENDC
+        if purge == True:
+            print bcolors.WARNING+'Deleting all apertures'+bcolors.ENDC
+            self.manAps = np.delete(self.manAps,np.arange(0,len(self.manAps)))
+            self.ManApFillObjInfo()
+            print bcolors.WARNING+'Removed all aperatures from objInfo'+bcolors.ENDC
 
     def ManualAperatureMagnitude(self,filter,inRA,inDEC,a,b,theta):
         ''' Drop an aperature of specified size onto an
@@ -526,13 +576,10 @@ class ClusterData(object):
         return zeroPoint
 
     def NumberOfManualAperatures(self):
-        # make sure that the length of each wanted arg is the same
-        if len(set(map(len,self.args.values()))) != 1:
-            raise IOError('Number of manual aperatures can not be set, recieved different '+ \
-                          'lenghs of input parameters')
-        return iter(set(map(len,self.args.values()))).next()
+        return len(self.manAps)
 
     def DeleteUnwantedArgs(self,args):
+        ''' Deletes unwanted keys and values from a dictionary '''
         toDelete = {k for k in args.keys() if k not in self.wantedArgs}
         args = {k:v for k,v in args.items() if k in self.wantedArgs}
         if len(toDelete) != 0:
@@ -541,12 +588,14 @@ class ClusterData(object):
             print bcolors.WARNING+'Deleted all unwanted arguments'+bcolors.ENDC
         return args
 
-    def __FormatArgs(self,args):
+    def FormatArgs(self,args):
         ''' Take the optional arguments, delete the unwanted
             arguments, and reformat the wanted arguments to a 
-            dictionary of numpy arrays.
+            numpy record array.
               ** This will not add any wanted, but unspecified 
                  arguments
+              ** Only takes dictionaries as input, do not need
+                 to run after __init__ has been called
         '''
         if isinstance(args,dict) == False:
             print bcolors.FAIL+'Optional input arguments not passed in correctly.'+bcolors.ENDC
@@ -572,6 +621,14 @@ class ClusterData(object):
         elif np.any(isinstance(i,(int,float,long,list,np.ndarray))==False for i in args.values()) == True:
             print bcolors.FAIL+'Did not recieve required data types for manual aperatures'+bcolors.ENDC
             raise IOError('Can only take number types, lists, or numpy arrays')
+        # make sure all arguments have the same number of entries
+        if len(set(map(len,args.values()))) != 1:
+            print bcolors.FAIL+'Did not receive equal number of paramters ' \
+                'for all arguments'+bcolors.ENDC
+            raise IOError('ra dec a b theta must have equal lengths')
+        # turn dict into numpy record array
+        dtype = dict(names=args.keys(),formats=['float']*len(args.keys()))
+        args = np.array(zip(*args.values()),dtype=dtype)
         return args
 
     def CheckArgs(self,args):
@@ -583,21 +640,22 @@ class ClusterData(object):
             all args can be entered as ints, floats, lists, or numpy arrays
         '''
         goodToGo = False
-        args = self.__FormatArgs(args)
-        argKeys = {k for k in args.keys()}
+        if isinstance(args,dict):
+            args = self.FormatArgs(args)            
+        argKeys = set(args.dtype.names)
         # if no arguments are passed in argsEmpty == True
-        argsEmpty = np.all([a.size == 0 for a in args.values()])
+        argsEmpty = bool(len(args)==False)
         if argsEmpty == True:
             goodToGo = True
-        # make sure all arguments have the same number of entries
-        elif len(set(map(len,args.values()))) != 1:
-            goodToGo = False
         elif self.wantedArgs == argKeys and argsEmpty == False:
             print bcolors.GREEN+'All required arguments for Manual Aperature met'+bcolors.ENDC
             goodToGo = True
         elif len(self.wantedArgs.difference(argKeys)) != 0:
             print bcolors.FAIL+'Missing necessary arguments'+bcolors.ENDC
             print bcolors.FAIL+','.join(self.wantedArgs.difference(argKeys))+bcolors.ENDC
+        # check if ra and dec in all filters
+        if np.all([image.contains_rd(r,d) for image in self.images.values() for r,d in zip(args['ra'],args['dec'])]) == False:
+            goodToGo == False
         return goodToGo
 
     def CheckRequiredDirectories(self):
@@ -773,8 +831,8 @@ class ClusterData(object):
         genTypes = ['ID','x','y','RA','DEC']
         magTypes = list(np.array([(filter+'mag',filter+'magerr') for filter in self.filters]).flatten())
         dataTypes = {'names':genTypes+magTypes,'formats':['>i4']+['float' for i in xrange(len(genTypes+magTypes)-1)]}
-        self.objInfo = np.zeros((self.nObjs+self.nManAps),dtype=dataTypes)
-        self.objInfo['ID'] = self.IDnum + np.arange(0,(self.nObjs+self.nManAps))
+        self.objInfo = np.zeros(self.nObjs,dtype=dataTypes)
+        self.objInfo['ID'] = self.IDnum + np.arange(0,self.nObjs)
 
     def ClusterID(self,verbose=True):
         name = self.clusterName
@@ -1052,14 +1110,6 @@ def OpenPickle(file):
     fo.close()
     return dict
 
-def RunInParallel(*functions):
-    processes = []
-    for fn in functions:
-        p = mp.Process(target=fn)
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
 #if __name__ == '__main__':
 #    cl = ClusterData('SPT0205')
 #    cl.ParamEAZY()
