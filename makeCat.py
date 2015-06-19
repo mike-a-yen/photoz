@@ -44,7 +44,7 @@ class ClusterData(object):
         '''
         self.wantedArgs = {'ra','dec','a','b','theta'}
         self.args = self.__FormatArgs(args)
-        if self.CheckArgs() == False:
+        if self.CheckArgs(self.args) == False:
             raise IOError('Did not meet required arguments for manual aperature')
         self.detectionFilter = detectionFilter
         #load latest images from database in all filters
@@ -67,7 +67,7 @@ class ClusterData(object):
         self.bkgRMS = {filter:self.Background(filter) for filter in self.filters}
         # perform sep obj detection on detection filter image
         self.objs = self.ImageObjDetection(self.detectionFilter)
-        self.nObjs,self.nManAps = len(self.objs),self.CheckArgs()
+        self.nObjs,self.nManAps = len(self.objs),self.NumberOfManualAperatures()
         self.detectPixelSize = self.images[self.detectionFilter].pixel_scale
         
         self.__InitObjInfo()
@@ -395,9 +395,35 @@ class ClusterData(object):
             Fills objInfo from the back.
         '''
 
-    def ManualAperatureAdd(self,**args):
-        ''' Add an aperature by hand after __init__'''
-        
+    def ManualAperatureAdd(self,**newargs):
+        ''' Add an aperature by hand after __init__
+            Must add all wanted arguments, to check
+            what they are do cl.wantedArgs
+        '''
+        newargs = self.__FormatArgs(newargs)
+        if self.CheckArgs(newargs) == True:
+            for k,v in newargs.items():
+                self.args[k] = np.concatenate((self.args[k],v))
+            self.args = self.__FormatArgs(self.args)
+            self.CheckArgs(self.args)
+            print bcolors.GREEN+'Added new aperatures'+bcolors.ENDC
+        else:
+            print bcolors.FAIL+'Aperature arguments not added'+bcolors.ENDC
+            print bcolors.FAIL+'Check the argument validity by passing to ' \
+                  'cl.CheckArgs(args)'+bcolors.ENDC
+    
+    def ManualAperatureRemove(self,ra,dec):
+        idx1 = np.where(self.args['ra'] == ra)[0]
+        idx2 = np.where(self.args['dec'] == dec)[0]
+        killIdx = np.intersect1d(idx1,idx2)
+        if len(killIdx) == 0:
+            print bcolors.FAIL+'Could not delete aperatures, ' \
+                  'specified RA and DEC do no agree on the same aperature'+bcolors.ENDC
+        else:
+            if len(killIdx) >  1:
+                print bcolors.WARNING+'Deleting %d aperatures'%len(idx1)+bcolors.ENDC
+            self.args = {k:np.delete(v,killIdx) for k,v in self.args.items()}
+            print bcolors.CYAN+'Deleted aperatures'+bcolors.ENDC
 
     def ManualAperatureMagnitude(self,filter,inRA,inDEC,a,b,theta):
         ''' Drop an aperature of specified size onto an
@@ -512,8 +538,11 @@ class ClusterData(object):
         return args
 
     def __FormatArgs(self,args):
-        ''' Take the optional arguments and reformat them to a
-            dictionary of numpy arrays
+        ''' Take the optional arguments, delete the unwanted
+            arguments, and reformat the wanted arguments to a 
+            dictionary of numpy arrays.
+              ** This will not add any wanted, but unspecified 
+                 arguments
         '''
         if isinstance(args,dict) == False:
             print bcolors.FAIL+'Optional input arguments not passed in correctly.'+bcolors.ENDC
@@ -541,7 +570,7 @@ class ClusterData(object):
             raise IOError('Can only take number types, lists, or numpy arrays')
         return args
 
-    def CheckArgs(self):
+    def CheckArgs(self,args):
         ''' Check the args passed to the __init__ are appropriate 
             and can be used. args should be
             ra, dec - must be inside image
@@ -550,12 +579,15 @@ class ClusterData(object):
             all args can be entered as ints, floats, lists, or numpy arrays
         '''
         goodToGo = False
-        self.args = self.__FormatArgs(self.args)
-        argKeys = {k for k in self.args.keys()}
+        args = self.__FormatArgs(args)
+        argKeys = {k for k in args.keys()}
         # if no arguments are passed in argsEmpty == True
-        argsEmpty = np.all([a.size == 0 for a in self.args.values()])
+        argsEmpty = np.all([a.size == 0 for a in args.values()])
         if argsEmpty == True:
             goodToGo = True
+        # make sure all arguments have the same number of entries
+        elif len(set(map(len,args.values()))) != 1:
+            goodToGo = False
         elif self.wantedArgs == argKeys and argsEmpty == False:
             print bcolors.GREEN+'All required arguments for Manual Aperature met'+bcolors.ENDC
             goodToGo = True
