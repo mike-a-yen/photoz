@@ -56,6 +56,7 @@ class ClusterData(object):
 
         self.wantedArgs = {'ra','dec','a','b','theta'}
         self.manAps = self.FormatArgs(args)
+        print self.manAps
         if self.CheckArgs(self.manAps) == False:
             raise IOError('Did not meet required arguments for manual aperature')
 
@@ -70,28 +71,8 @@ class ClusterData(object):
         self.__InitObjInfo()
         self.SEPFillObjInfo()
         self.ManApFillObjInfo()
-        # fill in ObjInfo with objects detected by sep
- #       for filter in self.filters:
- #           if filter ==  self.detectionFilter:
- #               self.objInfo['x'] = self.objs['x']
- #               self.objInfo['y'] = self.objs['y']
- #               self.objInfo['RA'] = self.objs['RA']
- #               self.objInfo['DEC'] = self.objs['DEC']
- #               ap = self.AperaturePhoto(filter,self.objs)
- #               self.objInfo[filter+'mag'] = ap[0]
- #               self.objInfo[filter+'magerr'] = ap[1]
- #           else:
- #               scale = self.detectPixelSize/self.images[filter].pixel_scale
- #               objects = self.objs[:]
- #               xy = self.images[filter].rd_to_xy(self.objs['RA'],self.objs['DEC'])
- #               objects['x'] = xy[0]
- #               objects['y'] = xy[1]
- #               objects['a'] = scale*self.objs['a']
- #               objects['b'] = scale*self.objs['b']
- #               ap = self.AperaturePhoto(filter,objects)
- #               self.objInfo[filter+'mag'] = ap[0]
- #               self.objInfo[filter+'magerr'] = ap[1]       
- #
+        print self.manAps
+
     def FromScratch(self):
         ''' Run all checks and create all necessary directories
             and files to make P(z) plots.
@@ -189,7 +170,8 @@ class ClusterData(object):
         if os.path.exists('CATALOGS/%s.cat'%self.clusterName) == False:
             raise RuntimeError('Must write catalog, try running cl.WriteCatalog()')
         pz = {}
-        for idx,obj in enumerate(self.objInfo):
+        fi = np.genfromtxt('CATALOGS/%s.cat'%self.clusterName,names=True)
+        for idx,obj in enumerate(fi):
             zrange, data = eazy.getEazyPz(idx,
                                           MAIN_OUTPUT_FILE='EAZY/%s/%s'%(self.clusterName,self.clusterName),
                                           OUTPUT_DIRECTORY='./')
@@ -347,7 +329,9 @@ class ClusterData(object):
             id = str(int(obj['ID']))
             sys.stdout = old_stdout
             for a in ax:
-                a.autoscale(axis='y',tight=True)
+                line = a.get_lines()[0]
+                ydata = line.get_ydata()
+                a.set_ylim(0.5*min(ydata),1.1*max(ydata))
             saveName = 'sedplots/%s_%s_EAZYSED'%(id,self.clusterName)
             cPickle.dump(fig,file(saveName+'.pklb','wb'))
             plt.savefig(saveName+'.png')
@@ -411,11 +395,11 @@ class ClusterData(object):
         if len(self.manAps) == 0:
             self.objInfo = np.resize(self.objInfo[0:self.nObjs],self.nObjs)
         else:
-            # extend size of objInfo to include aps
             lastID = self.objInfo['ID'][-len(self.manAps)]
             self.objInfo = np.resize(self.objInfo[0:self.nObjs],self.nObjs+len(self.manAps))
             for filter in self.filters:
                 if filter == self.detectionFilter:
+                    print 'detection filter'
                     self.objInfo['ID'][-len(self.manAps):] = np.arange(lastID+1,
                                                                lastID+1+len(self.manAps))
                     xy = self.images[filter].rd_to_xy(self.manAps['ra'],self.manAps['dec'])
@@ -431,17 +415,20 @@ class ClusterData(object):
                                                           self.manAps['theta'])
                     self.objInfo[filter+'mag'][-len(self.manAps):] = apMag[0]
                     self.objInfo[filter+'magerr'][-len(self.manAps):] = apMag[1]
+                    print self.manAps
                 else:
+                    print filter+' filter'
                     scale = self.detectPixelSize/self.images[filter].pixel_scale
-                    apertures = self.manAps[:]
-                    apertures['a'][-len(self.manAps):] = scale*self.manAps['a']
-                    apertures['b'][-len(self.manAps):] = scale*self.manAps['b']
+                    apertures = np.copy(self.manAps)
+                    apertures['a'] = scale*apertures['a']
+                    apertures['b'] = scale*apertures['b']
                     apMag = self.ManualAperatureMagnitude(filter,apertures['ra'], 
                                                           apertures['dec'], apertures['a'],
                                                           apertures['b'], apertures['theta'])
                     self.objInfo[filter+'mag'][-len(self.manAps):] = apMag[0]
                     self.objInfo[filter+'magerr'][-len(self.manAps):] = apMag[1]
-            
+                    print self.manAps
+
     def ManualAperatureAdd(self,**newargs):
         ''' Add an aperature by hand after __init__
             Must add all wanted arguments, to check
