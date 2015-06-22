@@ -586,12 +586,13 @@ class ClusterData(object):
             numpy record array.
               ** This will not add any wanted, but unspecified 
                  arguments
-              ** Only takes dictionaries as input, do not need
-                 to run after __init__ has been called
+              ** Only takes dictionaries and np.arrays as input, 
+              do not need to run after __init__ has been called
         '''
-        if isinstance(args,dict) == False:
+        if isinstance(args,(dict,np.ndarray)) == False:
             print bcolors.FAIL+'Optional input arguments not passed in correctly.'+bcolors.ENDC
-            raise IOError('Did not receive a dictionary, got a %s'%str(type(args)))
+            raise IOError('Did not receive a dictionary or np.array, ' \
+                              'got a %s'%str(type(args)))
         args = self.DeleteUnwantedArgs(args)
         argKeys = {k for k in args.keys()}
         if len(args) == 0:
@@ -648,6 +649,13 @@ class ClusterData(object):
         # check if ra and dec in all filters
         if np.all([image.contains_rd(r,d) for image in self.images.values() for r,d in zip(args['ra'],args['dec'])]) == False:
             goodToGo == False
+        # check if a > b for all manual apertures
+        if np.all([a>b for a,b in zip(args['a'],args['b'])]) == False:
+            goodToGo = False
+            print bcolors.FAIL+'Input for ellipse minor axis '+ \
+                ' greater than major axis!'+bcolors.ENDC
+            raise IOError('Ellipse minor axis greater than major axis, '\
+                              'check a,b values in manual apertures')
         return goodToGo
 
     def CheckRequiredDirectories(self):
@@ -1103,6 +1111,42 @@ def OpenPickle(file):
     fo.close()
     return dict
 
+def ArrayToDict(array):
+    ''' Take a numpy record array and convert it to
+        a dictionary of np arrays
+    '''
+    names = np.array(array.dtype.names)
+    dic = {name:array[name] for name in names}
+    return dic
+def DictToArray(dic):
+    ''' Take a dictionary and convert it to a numpy
+        record array. Values in dictionary must be 
+        of the same type.
+    '''
+    names = dic.keys()
+    # check to see if the dictionary contains a list or np array
+    hasArrays = np.all([isinstance(dic[name],np.ndarray) \
+                            for name in names])
+    hasLists = np.all([isinstance(dic[name],list) \
+                           for name in names])
+    hasNums = np.all([isinstance(dic[name],(int,float,long)) \
+                          for name in names])
+    if hasArrays == True:
+        formats = [dic[name].dtype.name for name in names]
+    elif hasLists == True:
+        formats = [type(dic[name][0]) for name in names]
+    elif hasNums == True:
+        formats = [type(i) for i in dic.values()]
+        dic = {k:np.array([v]) for k,v in dic.items()}
+    else:
+        print bcolor.FAIL+'Did not receive numbers, lists, or np.arrays '\
+            'as values in dictionary'
+        raise IOError('Did not recieve expected types in dictionary values')
+    print names
+    print formats
+    dtype = dict(names=names,formats=formats)
+    array = np.array(zip(*dic.values()),dtype=dtype)
+    return array
 #if __name__ == '__main__':
 #    cl = ClusterData('SPT0205')
 #    cl.ParamEAZY()
