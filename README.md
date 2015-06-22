@@ -139,9 +139,11 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
   
 2. You can also add an aperture on the fly.
   ```
-  cl.ManualApertureAdd(ra=...,dec=...,a=...,b=...,theta=...)
+  cl.ManualApertureAdd(ra=...,dec=...,a=...,b=...,theta=...,apFile=None)
+  # apFile is a path to a file with aperture params ra dec a b theta
+  # the apertures in this file will be appended to the apertures you specify by hand
   # This will automatically run ManApFillObjInfo() and update cl.objInfo
-  cl.WriteCatalog()
+  cl.WriteCatalog() # you still need to update the catalog explicitly
   ```
   
 3. To remove your apertures
@@ -150,4 +152,5 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
   # Removes the aperture at specified RA and DEC and deletes aperture info from objInfo
   cl.ManualApertureRemove(purge=True)
   # Removes all apertures and deletes aperture info from objInfo
+  cl.WriteCatalog() # you still need to update the catalog explicitly
    ```
