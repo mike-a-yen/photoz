@@ -156,5 +156,5 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
    ```
 4. To save your apertures in a text file for later use
   ```
-  cl.ManualAperturesSave('where/toSave/apertures')
+  cl.ManualAperturesSave('path/to/aperture_file')
   ```
