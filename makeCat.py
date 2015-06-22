@@ -644,7 +644,7 @@ class ClusterData(object):
             args = ArrayToDict(args)
         else:
             print bcolors.FAIL+'args not received as dictionary or np.array'+bcolors.ENDC
-            raise IOError('Expected dictionary or np.array,' \ 
+            raise IOError('Expected dictionary or np.array,' \
                           'got a %s'%str(type(args)))
         argKeys = set(args.dtype.names)
         # if no arguments are passed in argsEmpty == True
