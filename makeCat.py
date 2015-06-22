@@ -593,12 +593,15 @@ class ClusterData(object):
             print bcolors.FAIL+'Optional input arguments not passed in correctly.'+bcolors.ENDC
             raise IOError('Did not receive a dictionary or np.array, ' \
                               'got a %s'%str(type(args)))
+        elif isinstance(args,np.ndarray):
+            args = ArrayToDict(args)
         args = self.DeleteUnwantedArgs(args)
         argKeys = {k for k in args.keys()}
         if len(args) == 0:
             print bcolors.CYAN+'No args for manual aperature detected'+bcolors.ENDC
             args = {k:np.array([]) for k in self.wantedArgs}
-        # check if the arguments in args are number types and make them a np.array
+        # check if the arguments in args are number types 
+        # and make them a np.array
         if np.all([isinstance(i,(int,float,long)) for i in args.values()]) == True:
             args = {k:np.array([i]) for k,i in args.items()}
         # check if the arguments in args are lists and make them a np.array
@@ -610,7 +613,8 @@ class ClusterData(object):
             print bcolors.FAIL+''.join(set(map(str,map(type,args.values()))))+bcolors.ENDC
             raise IOError('Args not of the same data type, '+ \
                           'args must be all number types, lists, or np arrays')
-        # if the args are not any of these, they are something that can not be used
+        # if the args are not any of these, 
+        # they are something that can not be used
         elif np.any(isinstance(i,(int,float,long,list,np.ndarray))==False for i in args.values()) == True:
             print bcolors.FAIL+'Did not recieve required data types for manual aperatures'+bcolors.ENDC
             raise IOError('Can only take number types, lists, or numpy arrays')
@@ -620,8 +624,9 @@ class ClusterData(object):
                 'for all arguments'+bcolors.ENDC
             raise IOError('ra dec a b theta must have equal lengths')
         # turn dict into numpy record array
-        dtype = dict(names=args.keys(),formats=['float']*len(args.keys()))
-        args = np.array(zip(*args.values()),dtype=dtype)
+        args = DictToArray(args)
+        #dtype = dict(names=args.keys(),formats=['float']*len(args.keys()))
+        #args = np.array(zip(*args.values()),dtype=dtype)
         return args
 
     def CheckArgs(self,args):
@@ -634,7 +639,13 @@ class ClusterData(object):
         '''
         goodToGo = False
         if isinstance(args,dict):
-            args = self.FormatArgs(args)            
+            args = self.FormatArgs(args)
+        elif isinstance(args,np.ndarray):
+            args = ArrayToDict(args)
+        else:
+            print bcolors.FAIL+'args not received as dictionary or np.array'+bcolors.ENDC
+            raise IOError('Expected dictionary or np.array,' \ 
+                          'got a %s'%str(type(args)))
         argKeys = set(args.dtype.names)
         # if no arguments are passed in argsEmpty == True
         argsEmpty = bool(len(args)==False)
@@ -646,9 +657,11 @@ class ClusterData(object):
         elif len(self.wantedArgs.difference(argKeys)) != 0:
             print bcolors.FAIL+'Missing necessary arguments'+bcolors.ENDC
             print bcolors.FAIL+','.join(self.wantedArgs.difference(argKeys))+bcolors.ENDC
+            raise IOError('Did not receive all required arguments')
         # check if ra and dec in all filters
         if np.all([image.contains_rd(r,d) for image in self.images.values() for r,d in zip(args['ra'],args['dec'])]) == False:
             goodToGo == False
+            raise IOError('Not all RA and DEC are inside of image')
         # check if a > b for all manual apertures
         if np.all([a>b for a,b in zip(args['a'],args['b'])]) == False:
             goodToGo = False
