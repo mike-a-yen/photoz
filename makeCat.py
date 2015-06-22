@@ -58,14 +58,14 @@ class ClusterData(object):
         self.manAps = self.FormatArgs(args)
         print self.manAps
         if self.CheckArgs(self.manAps) == False:
-            raise IOError('Did not meet required arguments for manual aperature')
+            raise IOError('Did not meet required arguments for manual aperture')
 
         self.zeroPoints = {filter:self.ZeroPoint(filter) for filter in self.filters}
         # perform background subtraction on all filters
         self.bkgRMS = {filter:self.Background(filter) for filter in self.filters}
         # perform sep obj detection on detection filter image
         self.objs = self.ImageObjDetection(self.detectionFilter)
-        self.nObjs,self.nManAps = len(self.objs),self.NumberOfManualAperatures()
+        self.nObjs,self.nManAps = len(self.objs),self.NumberOfManualApertures()
         self.detectPixelSize = self.images[self.detectionFilter].pixel_scale
         
         self.__InitObjInfo()
@@ -372,7 +372,7 @@ class ClusterData(object):
                 self.objInfo['y'] = self.objs['y']
                 self.objInfo['RA'] = self.objs['RA']
                 self.objInfo['DEC'] = self.objs['DEC']
-                ap = self.AperaturePhoto(filter,self.objs)
+                ap = self.AperturePhoto(filter,self.objs)
                 self.objInfo[filter+'mag'] = ap[0]
                 self.objInfo[filter+'magerr'] = ap[1]
             else:
@@ -383,14 +383,14 @@ class ClusterData(object):
                 objects['y'] = xy[1]
                 objects['a'] = scale*self.objs['a']
                 objects['b'] = scale*self.objs['b']
-                ap = self.AperaturePhoto(filter,objects)
+                ap = self.AperturePhoto(filter,objects)
                 self.objInfo[filter+'mag'] = ap[0]
                 self.objInfo[filter+'magerr'] = ap[1]
 
     def ManApFillObjInfo(self):
-        ''' Fill the objInfo variable with hand drawn aperatures 
+        ''' Fill the objInfo variable with hand drawn apertures 
             aps is the args dictionary containing the ra, dec, a,
-            b, and theta of the hand drawn aperatures
+            b, and theta of the hand drawn apertures
         '''
         if len(self.manAps) == 0:
             self.objInfo = np.resize(self.objInfo[0:self.nObjs],self.nObjs)
@@ -399,7 +399,6 @@ class ClusterData(object):
             self.objInfo = np.resize(self.objInfo[0:self.nObjs],self.nObjs+len(self.manAps))
             for filter in self.filters:
                 if filter == self.detectionFilter:
-                    print 'detection filter'
                     self.objInfo['ID'][-len(self.manAps):] = np.arange(lastID+1,
                                                                lastID+1+len(self.manAps))
                     xy = self.images[filter].rd_to_xy(self.manAps['ra'],self.manAps['dec'])
@@ -407,7 +406,7 @@ class ClusterData(object):
                     self.objInfo['y'][-len(self.manAps):] = xy[1]
                     self.objInfo['RA'][-len(self.manAps):] = self.manAps['ra']
                     self.objInfo['DEC'][-len(self.manAps):] = self.manAps['dec']
-                    apMag = self.ManualAperatureMagnitude(filter,
+                    apMag = self.ManualApertureMagnitude(filter,
                                                           self.manAps['ra'],
                                                           self.manAps['dec'],
                                                           self.manAps['a'],
@@ -415,66 +414,70 @@ class ClusterData(object):
                                                           self.manAps['theta'])
                     self.objInfo[filter+'mag'][-len(self.manAps):] = apMag[0]
                     self.objInfo[filter+'magerr'][-len(self.manAps):] = apMag[1]
-                    print self.manAps
                 else:
-                    print filter+' filter'
                     scale = self.detectPixelSize/self.images[filter].pixel_scale
                     apertures = np.copy(self.manAps)
                     apertures['a'] = scale*apertures['a']
                     apertures['b'] = scale*apertures['b']
-                    apMag = self.ManualAperatureMagnitude(filter,apertures['ra'], 
+                    apMag = self.ManualApertureMagnitude(filter,apertures['ra'], 
                                                           apertures['dec'], apertures['a'],
                                                           apertures['b'], apertures['theta'])
                     self.objInfo[filter+'mag'][-len(self.manAps):] = apMag[0]
                     self.objInfo[filter+'magerr'][-len(self.manAps):] = apMag[1]
-                    print self.manAps
-
-    def ManualAperatureAdd(self,**newargs):
-        ''' Add an aperature by hand after __init__
+            self.PrintManualApertures()
+                    
+    def ManualApertureAdd(self,apFile = None,**newargs):
+        ''' Add an aperture by hand after __init__
             Must add all wanted arguments, to check
             what they are do cl.wantedArgs
+            Alternatively, write an aperture file with a header
+            # ra dec a b theta
+            where each row is an aperture
         '''
         newargs = self.FormatArgs(newargs)
+        if apFile != None:
+            fi = np.genfromtxt(apFile,names=True)
+            newargs = np.concatenate((newargs,fi))
         if self.CheckArgs(newargs) == True:
             self.manAps = np.concatenate((self.manAps,newargs))
-            print bcolors.GREEN+'Added new aperatures'+bcolors.ENDC
+            print bcolors.GREEN+'Added new apertures'+bcolors.ENDC
             self.ManApFillObjInfo()
             print bcolors.GREEN+'Updated objInfo with new apertures'+bcolors.ENDC
             print bcolors.GREEN+'Make sure to update the catalog and rerun P(z) methods'+ \
                 bcolors.ENDC
         else:
-            print bcolors.FAIL+'Aperature arguments not added'+bcolors.ENDC
+            print bcolors.FAIL+'Aperture arguments not added'+bcolors.ENDC
             print bcolors.FAIL+'Check the argument validity by passing to ' \
                   'cl.CheckArgs(args)'+bcolors.ENDC
     
-    def ManualAperatureRemove(self,ra=[],dec=[],purge=False):
-        ''' Remove any hand drawn aperatures by specifying its ra and dec
-            turn purge to True to delete all aperatures
+    def ManualApertureRemove(self,ra=[],dec=[],purge=False):
+        ''' Remove any hand drawn apertures by specifying its ra and dec
+            turn purge to True to delete all apertures
         '''
         if len(ra) > 0 and len(dec) > 0:
             idx1 = np.where(self.manAps['ra'] == ra)[0]
             idx2 = np.where(self.manAps['dec'] == dec)[0]
             killIdx = np.intersect1d(idx1,idx2)
             if len(killIdx) == 0:
-                print bcolors.FAIL+'Could not delete aperatures, ' \
-                    'specified RA and DEC do no agree on the same aperature'+bcolors.ENDC
+                print bcolors.FAIL+'Could not delete apertures, ' \
+                    'specified RA and DEC do no agree on the same aperture'+bcolors.ENDC
             else:
                 if len(killIdx) >  1:
-                    print bcolors.WARNING+'Deleting %d aperatures'%len(idx1)+bcolors.ENDC
+                    print bcolors.WARNING+'Deleting %d apertures'%len(idx1)+bcolors.ENDC
                 self.manAps = np.delete(self.manAps,killIdx)
-                print bcolors.CYAN+'Deleted aperatures'+bcolors.ENDC
+                print bcolors.CYAN+'Deleted apertures'+bcolors.ENDC
                 self.ManApFillObjInfo()
-                print bcolors.CYAN+'Removed aperatures from objInfo'+bcolors.ENDC
+                print bcolors.CYAN+'Removed apertures from objInfo'+bcolors.ENDC
         if purge == True:
             print bcolors.WARNING+'Deleting all apertures'+bcolors.ENDC
             self.manAps = np.delete(self.manAps,np.arange(0,len(self.manAps)))
             self.ManApFillObjInfo()
-            print bcolors.WARNING+'Removed all aperatures from objInfo'+bcolors.ENDC
+            print bcolors.WARNING+'Removed all apertures from objInfo'+bcolors.ENDC
 
-    def ManualAperatureMagnitude(self,filter,inRA,inDEC,a,b,theta):
-        ''' Drop an aperature of specified size onto an
-            image, and perform the aperature photometry.
-            a,b are the major and minor axis of the aperature
+    def ManualApertureMagnitude(self,filter,inRA,inDEC,a,b,theta):
+        ''' Drop an aperture of specified size onto an
+            image, and perform the aperture photometry.
+            a,b are the major and minor axis of the aperture
                 ellipse is the default, create a circle by 
                 setting the value of a = b
         '''
@@ -494,8 +497,8 @@ class ClusterData(object):
         magerr = ((magup-mag)+(mag-magdown))/2.
         return mag, magerr
 
-    def AperaturePhoto(self,filter,objs):
-        print 'Running Aperature Photometry on %s......'%filter
+    def AperturePhoto(self,filter,objs):
+        print 'Running Aperture Photometry on %s......'%filter
         kronrad, krflag = sep.kron_radius(self.dataList[filter],
                                           objs['x'], objs['y'],
                                           objs['a'], objs['b'],
@@ -508,7 +511,7 @@ class ClusterData(object):
                                               objs['theta'],
                                               2.5*kronrad, subpix=1,
                                               err=self.bkgRMS[filter])
-        #use circular aperature photometry if the kronradius is too small. see http://sep.readthedocs.org/en/v0.2.x/apertures.html
+        #use circular aperture photometry if the kronradius is too small. see http://sep.readthedocs.org/en/v0.2.x/apertures.html
         r_min = 1.75 # minimum diameter = 3.5
         use_circle = kronrad * np.sqrt(objs['a']*objs['b']) < r_min
         cflux, cfluxerr, cflag = sep.sum_circle(self.dataList[filter],
@@ -567,7 +570,7 @@ class ClusterData(object):
             raise Exception("Do not have information for filter %s" %filter)
         return zeroPoint
 
-    def NumberOfManualAperatures(self):
+    def NumberOfManualApertures(self):
         return len(self.manAps)
 
     def DeleteUnwantedArgs(self,args):
@@ -579,6 +582,14 @@ class ClusterData(object):
             print bcolors.WARNING+' '.join(toDelete)+bcolors.ENDC
             print bcolors.WARNING+'Deleted all unwanted arguments'+bcolors.ENDC
         return args
+
+    def PrintManualApertures(self):
+        ''' Print a table of manual aperture properties '''
+        print '####################################'
+        print 'ra        dec        a    b    theta'
+        for ap in self.manAps:
+            print ap['ra'], ap['dec'], ap['a'], ap['b'], ap['theta']
+        print '####################################'
 
     def FormatArgs(self,args):
         ''' Take the optional arguments, delete the unwanted
@@ -598,7 +609,7 @@ class ClusterData(object):
         args = self.DeleteUnwantedArgs(args)
         argKeys = {k for k in args.keys()}
         if len(args) == 0:
-            print bcolors.CYAN+'No args for manual aperature detected'+bcolors.ENDC
+            print bcolors.CYAN+'No args for manual aperture detected'+bcolors.ENDC
             args = {k:np.array([]) for k in self.wantedArgs}
         # check if the arguments in args are number types 
         # and make them a np.array
@@ -616,7 +627,7 @@ class ClusterData(object):
         # if the args are not any of these, 
         # they are something that can not be used
         elif np.any(isinstance(i,(int,float,long,list,np.ndarray))==False for i in args.values()) == True:
-            print bcolors.FAIL+'Did not recieve required data types for manual aperatures'+bcolors.ENDC
+            print bcolors.FAIL+'Did not recieve required data types for manual apertures'+bcolors.ENDC
             raise IOError('Can only take number types, lists, or numpy arrays')
         # make sure all arguments have the same number of entries
         if len(set(map(len,args.values()))) != 1:
@@ -638,10 +649,8 @@ class ClusterData(object):
             all args can be entered as ints, floats, lists, or numpy arrays
         '''
         goodToGo = False
-        if isinstance(args,dict):
+        if isinstance(args,(dict,np.ndarray)):
             args = self.FormatArgs(args)
-        elif isinstance(args,np.ndarray):
-            args = ArrayToDict(args)
         else:
             print bcolors.FAIL+'args not received as dictionary or np.array'+bcolors.ENDC
             raise IOError('Expected dictionary or np.array,' \
@@ -652,7 +661,7 @@ class ClusterData(object):
         if argsEmpty == True:
             goodToGo = True
         elif self.wantedArgs == argKeys and argsEmpty == False:
-            print bcolors.GREEN+'All required arguments for Manual Aperature met'+bcolors.ENDC
+            print bcolors.GREEN+'All required arguments for Manual Aperture met'+bcolors.ENDC
             goodToGo = True
         elif len(self.wantedArgs.difference(argKeys)) != 0:
             print bcolors.FAIL+'Missing necessary arguments'+bcolors.ENDC
@@ -663,7 +672,7 @@ class ClusterData(object):
             goodToGo == False
             raise IOError('Not all RA and DEC are inside of image')
         # check if a > b for all manual apertures
-        if np.all([a>b for a,b in zip(args['a'],args['b'])]) == False:
+        if np.all([a >= b for a,b in zip(args['a'],args['b'])]) == False:
             goodToGo = False
             print bcolors.FAIL+'Input for ellipse minor axis '+ \
                 ' greater than major axis!'+bcolors.ENDC
@@ -1155,8 +1164,6 @@ def DictToArray(dic):
         print bcolor.FAIL+'Did not receive numbers, lists, or np.arrays '\
             'as values in dictionary'
         raise IOError('Did not recieve expected types in dictionary values')
-    print names
-    print formats
     dtype = dict(names=names,formats=formats)
     array = np.array(zip(*dic.values()),dtype=dtype)
     return array
