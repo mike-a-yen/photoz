@@ -91,9 +91,9 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
         cl.RunEAZY() # requires symlink setup
         ```
         
-  5. Turn the BPZ and EAZY output into a more useable format
-        Saves outputs as a pickled (binary or ASCII) dictionary
-        {'z':zrange, 'obID':P(z), ...}
+  5. Turn the BPZ and EAZY output into a more useable format.
+     Saves outputs as a pickled (binary or ASCII) dictionary.
+     {'z':zrange, 'obID':P(z), ...}
         ```
         cl.ProcessBPZOutput(ASCII=False)
         cl.ProcessEAZYOutput(ACII=False)
@@ -108,15 +108,25 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
         cl.PlotPickledPZ('COMBINED')
         cl.PlotAllMethods()
         ```
+        
   7. Plot SED fits from BPZ and EAZY (only have EAZY right now)
-      ```
-      cl.PlotEAZYSED()
-      ```
+     ```
+     cl.PlotEAZYSED()
+     ```
+     
+  8. Save PDF(z) for each object in each method to an ASCII file.
+     ```
+     cl.SavePZ('BPZ')
+     cl.SavePZ('EAZY')
+     cl.SavePZ('COMBINED')
+     ```
 9. With all the plots and catalogs made, it is useful to be able to get the P(z)
     from the closest object to a given RA and DEC.
     You specify an RA and DEC, get the P(z) from the object closest to that RA and DEC
     ```
-    objInfo, separation = cl.MatchRADECtoOBJ(ra,dec,threshold=10.) # ra and dec should be unitless in degree format
+    objInfo, separation = cl.MatchRADECtoOBJ(ra,dec,threshold=10.) 
+    # ra and dec should be unitless in degree format 
+    # i.e. do not pass them in with astropy units
     # objInfo contains all information in the catalog for this object
     # separation in arcsec from the given ra and dec
     ```
