@@ -65,7 +65,7 @@ Write the AB magnitudes for each filter to a catalog. Catalog needs to include t
     
     This will run all of the necessary commands to yield P(z) plots.
     
-    **Continue to step 3**
+    **Continue to step 9**
     
   2. Check requirements to run properly, this will create all required but non existant directories
         ```
